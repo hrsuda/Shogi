@@ -128,11 +128,13 @@ class OU(Piece):
 
 
 class Board():
-    def __init__(self):
-        self.pieces = []
+    def __init__(self,pieces):
+        self.pieces = tuple(pieces)
         self.turn = False
         self.board_shape = (9,9)
-        self.komadai = np.zeros(40)
+        self.komadai_mask = [p.position==[9,9] for p in self.pieces]
+        self.array_name, self.array_rawname, self.promote_name, self.position =
+         np.zeros([len(pieces),4], dtype=bool)
         # self.positions_board = np.zeros(self.board_shape)
 
 
@@ -143,7 +145,7 @@ class Board():
         self.positions_board = np.zeros([2,9,9],dtype=bool)
         self.pieces_board = np.zeros([9,9],dtype=bool)
         self.pieces_board[:,:] = None
-        for p in self.positions:
+        for p in self.pieces:
             self.positions_board[p.owner,p.position[0],p.position[1]] = True
             self.pieces_board[p.position[0],p.position[1]] = p
 
@@ -153,10 +155,49 @@ class Board():
         cross[1] = piece.full_move & self.positions_board[1]
 
 
-    def move(self, start, goal, promote=False):
-        if start==[0,0]:
-            a = positions_board[goal]
-            
+    def get_position(self, p):
+        return p.position
+
+    def get_name(self, p):
+        return p.name
+
+    def get_rawname(self, p):
+        return p.rawname
+
+    def get_name(self, p):
+        return p.promote_name
+
+
+    def get_array_position(self):
+        self.array_position[:] = np.array(map(self.get_position, self.pieces))
+
+    def get_arrat_name(self):
+        self.array_name[:] = np.array(map(self.get_name, self.pieces))
+
+    def get_array_rawname(self):
+        self.array_rawname[:] = np.array(map(self.get_rawname, self.pieces))
+
+    def get_array_promote_name(self):
+        self.array_promote_name[:] = np.array(map(self.get_promote_name, self.pieces))
+
+
+    def move(self, start, goal, name, promote=False):
+        mask_position = self.array_position == start
+        mask_rawname = self.array_rawname == name
+        mask_promote_name = self.array_promote_name == name
+        p = self.pieces[(mask_rawname | mask_promote_name) & mask_position][0]
+        p.position = goal
+
+        if any(self.array_position==goal):
+            p.capture(self.pieceis[self.array_position==goal])
+
+        if promote or (name!=p.name):
+            p.name = promote_name
+             
+
+
+
+
 
     # def fname(arg):
     #     pass
