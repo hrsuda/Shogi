@@ -1,14 +1,15 @@
 import numpy as np
+import pandas as pd
 # import scipy as sp
 
 
 
 class Piece():
-    def __init__(self,name="hoge"):
+    def __init__(self, init_position, owner, name="hoge"):
         self.name = name
         self.rawname = name
-        self.owner = False
-        self.position = [0,0]
+        self.owner = owner
+        self.position = init_posision
         self.promote_name = "nari"
 
         # self.full_move = np.zeros([17,17],dtype=bool)
@@ -28,9 +29,8 @@ class Piece():
 
 class HISHA(Piece):
 
-    def __init__(self, init_posision, name="HI"):
+    def __init__(self,  name="HI"):
         super.__init__(name=name)
-        self.position = init_posision
 
         self.promete_name = "RY"
         # self.set_legal_move()
@@ -81,49 +81,42 @@ class HISHA(Piece):
                                              # 9-self.position[1]:18-self.position[1]]
 class KAKU(Piece):
 
-    def __init__(self, init_posision, name="KA"):
+    def __init__(self,  name="KA"):
         super.__init__(name=name)
-        self.position = init_posision
         self.promote_name = "UM"
 
 class FU(Piece):
 
-    def __init__(self, init_posision, name="FU"):
+    def __init__(self,  name="FU"):
         super.__init__(name=name)
-        self.position = init_posision
         self.promote_name = "TO"
 class KYO(Piece):
 
-    def __init__(self, init_posision, name="KY"):
+    def __init__(self,  name="KY"):
         super.__init__(name=name)
-        self.position = init_posision
         self.promote_name = "NY"
 
 class KEIMA(Piece):
 
-    def __init__(self, init_posision, name="KE"):
+    def __init__(self,  name="KE"):
         super.__init__(name=name)
-        self.position = init_posision
         self.promote_name = "NK"
 
 class GIN(Piece):
 
-    def __init__(self, init_posision, name="GI"):
+    def __init__(self, name="GI"):
         super.__init__(name=name)
-        self.position = init_posision
         self.promote_name = "NG"
 
 class KIN(Piece):
 
-    def __init__(self, init_posision, name="KI"):
+    def __init__(self,  name="KI"):
         super.__init__(name=name)
-        self.position = init_posision
 
 class OU(Piece):
 
-    def __init__(self, init_posision, name="OU"):
+    def __init__(self,  name="OU"):
         super.__init__(name=name)
-        self.position = init_posision
 
 
 
@@ -193,7 +186,13 @@ class Board():
 
         if promote or (name!=p.name):
             p.name = promote_name
-             
+
+    def read_file(self, filename):
+        df = pf.read_csv(filename, comment="'", header)
+        pieceis = [OU(init_posision=[4,8], owner=True),
+                   OU(init_posision=[4,0], owner=False),
+                   ]
+
 
 
 
