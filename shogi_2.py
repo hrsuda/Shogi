@@ -181,7 +181,7 @@ class Board():
         self.array_promote_name[:] = np.array(map(self.get_promote_name, self.pieces))
 
 
-    def move(self, start, goal, name, promote=False):
+    def move(self, start, goal, name):
         mask_position = self.array_position == start
         mask_rawname = self.array_rawname == name
         mask_promote_name = self.array_promote_name == name
@@ -191,13 +191,5 @@ class Board():
         if any(self.array_position==goal):
             p.capture(self.pieceis[self.array_position==goal])
 
-        if promote or (name!=p.name):
+        if name!=p.name:
             p.name = promote_name
-             
-
-
-
-
-
-    # def fname(arg):
-    #     pass
