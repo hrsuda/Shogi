@@ -1,4 +1,4 @@
-import numpy as np
+aimport numpy as np
 import pandas as pd
 # import scipy as sp
 
@@ -203,15 +203,22 @@ class Board():
     def read_file(self, filename):
         # data = pf.read_csv(filename, comment="'", header=hoge)
         with open(filename) as f:
-        data = f.read().split('\n')
-
+            data = f.read().split('\n')
+        out = []
         for l in data:
             if l[0] in [0,1,2,3,4,5,6,7,8,9]:
                 start = [int(l[0]),int(l[1])]
                 goal = [int(l[2]),int(l[3])]
                 name = l[4:6]
                 self.move(start, goal, name)
+                self.turn = ~self.turn
+                out.append(self.board_data())
 
+            elif l == "%TORYO":
+                result = len(out)%2==1
+                out.append(result)
+
+            return out
 
 
         # pieceis = [OU(init_posision=[4,8], owner=True),
