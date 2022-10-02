@@ -1,14 +1,15 @@
 import numpy as np
+import pandas as pd
 # import scipy as sp
 
 
 
 class Piece():
-    def __init__(self,name="hoge"):
+    def __init__(self, init_position, owner, name="hoge"):
         self.name = name
         self.rawname = name
-        self.owner = False
-        self.position = [0,0]
+        self.owner = owner
+        self.position = init_posision
         self.promote_name = "nari"
 
         # self.full_move = np.zeros([17,17],dtype=bool)
@@ -28,9 +29,8 @@ class Piece():
 
 class HISHA(Piece):
 
-    def __init__(self, init_posision, name="HI"):
+    def __init__(self,  name="HI"):
         super.__init__(name=name)
-        self.position = init_posision
 
         self.promete_name = "RY"
         # self.set_legal_move()
@@ -81,49 +81,42 @@ class HISHA(Piece):
                                              # 9-self.position[1]:18-self.position[1]]
 class KAKU(Piece):
 
-    def __init__(self, init_posision, name="KA"):
+    def __init__(self,  name="KA"):
         super.__init__(name=name)
-        self.position = init_posision
         self.promote_name = "UM"
 
 class FU(Piece):
 
-    def __init__(self, init_posision, name="FU"):
+    def __init__(self,  name="FU"):
         super.__init__(name=name)
-        self.position = init_posision
         self.promote_name = "TO"
 class KYO(Piece):
 
-    def __init__(self, init_posision, name="KY"):
+    def __init__(self,  name="KY"):
         super.__init__(name=name)
-        self.position = init_posision
         self.promote_name = "NY"
 
 class KEIMA(Piece):
 
-    def __init__(self, init_posision, name="KE"):
+    def __init__(self,  name="KE"):
         super.__init__(name=name)
-        self.position = init_posision
         self.promote_name = "NK"
 
 class GIN(Piece):
 
-    def __init__(self, init_posision, name="GI"):
+    def __init__(self, name="GI"):
         super.__init__(name=name)
-        self.position = init_posision
         self.promote_name = "NG"
 
 class KIN(Piece):
 
-    def __init__(self, init_posision, name="KI"):
+    def __init__(self,  name="KI"):
         super.__init__(name=name)
-        self.position = init_posision
 
 class OU(Piece):
 
-    def __init__(self, init_posision, name="OU"):
+    def __init__(self,  name="OU"):
         super.__init__(name=name)
-        self.position = init_posision
 
 
 
@@ -133,8 +126,11 @@ class Board():
         self.turn = False
         self.board_shape = (9,9)
         self.komadai_mask = [p.position==[9,9] for p in self.pieces]
-        self.array_name, self.array_rawname, self.promote_name, self.position =
-         np.zeros([len(pieces),4], dtype=bool)
+        self.array_name = np.zeros(len(pieces))
+        self.array_position = np.zeros(len(pieces))
+        self.array_owner = np.zeros(len(pieces))
+        self.array_rawname = np.zeros(len(pieces))
+        self.array_promote_name = np.zeros(len(pieces))
         # self.positions_board = np.zeros(self.board_shape)
 
 
@@ -164,9 +160,11 @@ class Board():
     def get_rawname(self, p):
         return p.rawname
 
-    def get_name(self, p):
+    def get_promote_name(self, p):
         return p.promote_name
 
+    def get_owner(self, p):
+        return p.owner
 
     def get_array_position(self):
         self.array_position[:] = np.array(map(self.get_position, self.pieces))
@@ -180,6 +178,8 @@ class Board():
     def get_array_promote_name(self):
         self.array_promote_name[:] = np.array(map(self.get_promote_name, self.pieces))
 
+    def get_array_owner(self):
+        self.array_owner[:] = np.array(map(self.get_owner, self.pieces))
 
     def move(self, start, goal, name):
         mask_position = self.array_position == start
@@ -193,3 +193,35 @@ class Board():
 
         if name!=p.name:
             p.name = promote_name
+
+    def board_data(self):
+        self.get_array_position()
+
+        self.out_data[0] = self.turn
+        self.out_data[1:41] = self.array_position[:,0]*9 + self.array_position[:,1]
+        self.out_data[41:82] = self.array_owner
+    def read_file(self, filename):
+        # data = pf.read_csv(filename, comment="'", header=hoge)
+        with open(filename) as f:
+        data = f.read().split('\n')
+
+        for l in data:
+            if l[0] in [0,1,2,3,4,5,6,7,8,9]:
+                start = [int(l[0]),int(l[1])]
+                goal = [int(l[2]),int(l[3])]
+                name = l[4:6]
+                self.move(start, goal, name)
+
+
+
+        # pieceis = [OU(init_posision=[4,8], owner=True),
+        #            OU(init_posision=[4,0], owner=False),
+        #            ]
+
+
+
+
+
+
+    # def fname(arg):
+    #     pass
