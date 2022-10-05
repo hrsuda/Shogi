@@ -1,15 +1,15 @@
-aimport numpy as np
+import numpy as np
 import pandas as pd
 # import scipy as sp
 
 
 
-class Piece():
+class Piece:
     def __init__(self, init_position, owner, name="hoge"):
         self.name = name
         self.rawname = name
         self.owner = owner
-        self.position = init_posision
+        self.position = init_position
         self.promote_name = "nari"
 
         # self.full_move = np.zeros([17,17],dtype=bool)
@@ -23,7 +23,8 @@ class Piece():
     def capture(self,target):
         target.captured()
 
-
+    def check_promote():
+        return self.name==self.promote_name
     def _set_position(self, position):
         self.position = position
 
@@ -120,7 +121,7 @@ class OU(Piece):
 
 
 
-class Board():
+class Board:
     def __init__(self,pieces):
         self.pieces = tuple(pieces)
         self.turn = False
@@ -200,6 +201,7 @@ class Board():
         self.out_data[0] = self.turn
         self.out_data[1:41] = self.array_position[:,0]*9 + self.array_position[:,1]
         self.out_data[41:82] = self.array_owner
+        self.out_data[82:123] = self.array_promote_name == self.array_name
     def read_file(self, filename):
         # data = pf.read_csv(filename, comment="'", header=hoge)
         with open(filename) as f:
@@ -218,7 +220,7 @@ class Board():
                 result = len(out)%2==1
                 out.append(result)
 
-            return out
+            return np.array(out,dtype=np.int8)
 
 
         # pieceis = [OU(init_posision=[4,8], owner=True),
