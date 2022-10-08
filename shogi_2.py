@@ -18,7 +18,7 @@ class Piece:
 
     def captured(self):
         self.owner = ~self.owner
-        self.position = [9, 9]
+        self.position = [0, 0]
 
     def capture(self,target):
         target.captured()
@@ -30,8 +30,8 @@ class Piece:
 
 class HISHA(Piece):
 
-    def __init__(self,  name="HI"):
-        super.__init__(name=name)
+    def __init__(self, init_position, owner, name="HI"):
+        super().__init__(init_position, owner, name=name)
 
         self.promete_name = "RY"
         # self.set_legal_move()
@@ -82,56 +82,57 @@ class HISHA(Piece):
                                              # 9-self.position[1]:18-self.position[1]]
 class KAKU(Piece):
 
-    def __init__(self,  name="KA"):
-        super.__init__(name=name)
+    def __init__(self, init_position, owner, name="KA"):
+        super().__init__(init_position, owner, name=name)
         self.promote_name = "UM"
 
 class FU(Piece):
 
-    def __init__(self,  name="FU"):
-        super.__init__(name=name)
+    def __init__(self, init_position, owner, name="FU"):
+        super().__init__(init_position, owner, name=name)
         self.promote_name = "TO"
 class KYO(Piece):
 
-    def __init__(self,  name="KY"):
-        super.__init__(name=name)
+    def __init__(self, init_position, owner, name="KY"):
+        super().__init__(init_position, owner,name=name)
         self.promote_name = "NY"
 
 class KEIMA(Piece):
 
-    def __init__(self,  name="KE"):
-        super.__init__(name=name)
+    def __init__(self, init_position, owner, name="KE"):
+        super().__init__(init_position, owner, name=name)
         self.promote_name = "NK"
 
 class GIN(Piece):
 
-    def __init__(self, name="GI"):
-        super.__init__(name=name)
+    def __init__(self, init_position, owner, name="GI"):
+        super().__init__(init_position, owner, name=name)
         self.promote_name = "NG"
 
 class KIN(Piece):
 
-    def __init__(self,  name="KI"):
-        super.__init__(name=name)
+    def __init__(self, init_position, owner, name="KI"):
+        super().__init__(init_position, owner, name=name)
 
 class OU(Piece):
 
-    def __init__(self,  name="OU"):
-        super.__init__(name=name)
+    def __init__(self, init_position, owner, name="OU"):
+        super().__init__(init_position, owner, name=name)
 
 
 
 class Board:
     def __init__(self,pieces):
-        self.pieces = tuple(pieces)
+        self.pieces = np.array(pieces)
         self.turn = False
         self.board_shape = (9,9)
-        self.komadai_mask = [p.position==[9,9] for p in self.pieces]
-        self.array_name = np.zeros(len(pieces))
-        self.array_position = np.zeros(len(pieces))
-        self.array_owner = np.zeros(len(pieces))
-        self.array_rawname = np.zeros(len(pieces))
-        self.array_promote_name = np.zeros(len(pieces))
+        self.komadai_mask = [p.position==[0,0] for p in self.pieces]
+        self.array_name = np.zeros(len(pieces),dtype="<U2")
+        self.array_position = np.zeros([len(pieces),2])
+        self.array_owner = np.zeros(len(pieces),dtype=bool)
+        self.array_rawname = np.zeros(len(pieces),dtype="<U2")
+        self.array_promote_name = np.zeros(len(pieces),dtype="<U2")
+        self.out_data = np.zeros(121)
         # self.positions_board = np.zeros(self.board_shape)
 
 
@@ -168,59 +169,74 @@ class Board:
         return p.owner
 
     def get_array_position(self):
-        self.array_position[:] = np.array(map(self.get_position, self.pieces))
+        self.array_position[:] = np.array(list(map(self.get_position, self.pieces)))
 
-    def get_arrat_name(self):
-        self.array_name[:] = np.array(map(self.get_name, self.pieces))
+    def get_array_name(self):
+        self.array_name[:] = np.array(list(map(self.get_name, self.pieces)))
 
     def get_array_rawname(self):
-        self.array_rawname[:] = np.array(map(self.get_rawname, self.pieces))
+        self.array_rawname[:] = np.array(list(map(self.get_rawname, self.pieces)))
 
     def get_array_promote_name(self):
-        self.array_promote_name[:] = np.array(map(self.get_promote_name, self.pieces))
+        self.array_promote_name[:] = np.array(list(map(self.get_promote_name, self.pieces)))
 
     def get_array_owner(self):
-        self.array_owner[:] = np.array(map(self.get_owner, self.pieces))
+        self.array_owner[:] = np.array(list(map(self.get_owner, self.pieces)))
+
 
     def move(self, start, goal, name):
-        mask_position = self.array_position == start
+        self.get_array_name()
+        self.get_array_owner()
+        self.get_array_rawname()
+        self.get_array_promote_name()
+        self.get_array_position()
+
+        mask_position = (self.array_position[:,0] == start[0]) * (self.array_position[:,1] == start[1])
         mask_rawname = self.array_rawname == name
         mask_promote_name = self.array_promote_name == name
         p = self.pieces[(mask_rawname | mask_promote_name) & mask_position][0]
         p.position = goal
 
-        if any(self.array_position==goal):
-            p.capture(self.pieceis[self.array_position==goal])
+        if ((self.array_position[:,0]==goal[0])*(self.array_position[:,1]==goal[1])).any():
+            p.capture(self.pieces[(self.array_position[:,0]==goal[0])*(self.array_position[:,1]==goal[1])][0])
 
         if name!=p.name:
             p.name = promote_name
 
     def board_data(self):
+        # self.get_array_position()
+        self.get_array_name()
+        self.get_array_owner()
+        self.get_array_rawname()
+        self.get_array_promote_name()
         self.get_array_position()
-
+        self.out_data[:] = 0
         self.out_data[0] = self.turn
-        self.out_data[1:41] = self.array_position[:,0]*9 + self.array_position[:,1]
-        self.out_data[41:82] = self.array_owner
-        self.out_data[82:123] = self.array_promote_name == self.array_name
+        self.out_data[1:41] = self.array_position[:,0]*10 + self.array_position[:,1]
+        self.out_data[41:81] = self.array_owner
+        self.out_data[81:121] = self.array_promote_name == self.array_name
     def read_file(self, filename):
         # data = pf.read_csv(filename, comment="'", header=hoge)
         with open(filename) as f:
             data = f.read().split('\n')
         out = []
         for l in data:
-            if l[0] in [0,1,2,3,4,5,6,7,8,9]:
-                start = [int(l[0]),int(l[1])]
-                goal = [int(l[2]),int(l[3])]
-                name = l[4:6]
+            if len(l)==7:
+
+                start = [int(l[1]),int(l[2])]
+                goal = [int(l[3]),int(l[4])]
+                name = l[5:7]
                 self.move(start, goal, name)
                 self.turn = ~self.turn
-                out.append(self.board_data())
+                self.board_data()
+                out.append(self.out_data.copy())
 
             elif l == "%TORYO":
                 result = len(out)%2==1
-                out.append(result)
 
-            return np.array(out,dtype=np.int8)
+
+        return np.array(out,dtype=np.int8), result
+
 
 
         # pieceis = [OU(init_posision=[4,8], owner=True),
