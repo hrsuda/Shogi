@@ -132,7 +132,7 @@ class Board:
         self.array_owner = np.zeros(len(pieces),dtype=bool)
         self.array_rawname = np.zeros(len(pieces),dtype="<U2")
         self.array_promote_name = np.zeros(len(pieces),dtype="<U2")
-        self.out_data = np.zeros(121)
+        self.out_data = np.zeros(160)
         # self.positions_board = np.zeros(self.board_shape)
 
 
@@ -183,13 +183,19 @@ class Board:
     def get_array_owner(self):
         self.array_owner[:] = np.array(list(map(self.get_owner, self.pieces)))
 
+    def get_array(self):
+        arrays = np.array([[p.position, p.name, p.owner, p.rawname, p.promote_name] for p in self.pieces]).T
+        self.array_position, self.array_name, self.array_owner, self.rawname, self.promote_name = arrays
+
 
     def move(self, start, goal, name):
-        self.get_array_name()
-        self.get_array_owner()
-        self.get_array_rawname()
-        self.get_array_promote_name()
-        self.get_array_position()
+        # self.get_array_name()
+        # self.get_array_owner()
+        # self.get_array_rawname()
+        # self.get_array_promote_name()
+        # self.get_array_position()
+
+        self.get_array()
 
         mask_position = (self.array_position[:,0] == start[0]) * (self.array_position[:,1] == start[1])
         mask_rawname = self.array_rawname == name
@@ -205,16 +211,19 @@ class Board:
 
     def board_data(self):
         # self.get_array_position()
-        self.get_array_name()
-        self.get_array_owner()
-        self.get_array_rawname()
-        self.get_array_promote_name()
-        self.get_array_position()
+        # self.get_array_name()
+        # self.get_array_owner()
+        # self.get_array_rawname()
+        # self.get_array_promote_name()
+        # self.get_array_position()
+        self.get_array()
         self.out_data[:] = 0
         self.out_data[0] = self.turn
-        self.out_data[1:41] = self.array_position[:,0]*10 + self.array_position[:,1]
-        self.out_data[41:81] = self.array_owner
-        self.out_data[81:121] = self.array_promote_name == self.array_name
+        self.out_data[1:41] = self.array_position[:,0]
+        self.out_data[41:81] = self.array_position[0:1]
+        self.out_data[81:121] = self.array_owner
+        self.out_data[121:161] = self.array_promote_name == self.array_name
+
     def read_file(self, filename):
         # data = pf.read_csv(filename, comment="'", header=hoge)
         with open(filename) as f:
