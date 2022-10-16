@@ -1,8 +1,12 @@
 import numpy as np
 import scipy as sp
+from collections import OrderedDict
 
-
-def softmax():
+def softmax(a):
+    c = np.max(a)
+    exp_a = np.exp(a-c)
+    sum_exp_a = np.sum_(exp_a)
+    return exp_a / sum_exp_a
 
 
 
@@ -16,7 +20,12 @@ def cross_entropy_error(y, t):
 
 
 
-
+def sum_squared_error(y, t):
+    if y.ndim == 1:
+        t = t.reshape(1, t.size) #1d->2d
+        y = y.reshape(1, y.size)
+    batch_size = y.shape[0]
+    return 0.5 * np.sum((y-t)**0.5) / batch_size
 
 
 
@@ -83,3 +92,62 @@ class SoftmaxWithLoss(object):
 
     def forward(self, x, t):
         self.t = t
+        self.y = softmax(x)
+        self.loss = cross_entropy_error(self.y, self.t)
+
+        return self.loss
+
+    def backward(self, dout=1):
+        batch_size = self.t.shape[0]
+        dx = (self.y - self.t) / batch_size
+        return dx
+
+
+class TwoLayerNet(object):
+
+    def __init__(self, input_size, hidden_size, output_size, weight_init_std=0.1):
+
+        self.params = {}
+        self.params["W1"] = weight_init_std * np.random.randn(input_size, hidden_size)
+        self.params["b1"] = np.zeros(hidden_size)
+        self.params["W2"] = weight_init_std * np.random.randn(input_size, hidden_size)
+        self.params["b1"] = np.zeros(output_size)
+
+
+        self.layers = np.OrderedDict()
+        self.layers["Affine1"] = Affine(self.params["W1"], self.params["b1"])
+        self.layers["Relu"] = Relu()
+        self.layers["Affine2"] = Affine(self.params["W2"], self.params["b2"])
+
+        self.lastLayer = SoftmaxWithLoss()
+
+    def predict(self, x):
+        for layer in self.layers.values():
+            x = layer.forward(x)
+
+        return x
+
+    def loss(self, x, t):
+        y = self.predict(x)
+
+        return self.lastLayer.forward(x, t)
+
+    def gradient(self, x, t):
+        self.loss(x, t)
+
+        dout = 1
+        dout = self.lastLayer.backward(dout)
+
+        layers = list(self.layers.values())
+        layers.reverse()
+
+        for layer in layers:
+            dout = layer.backward(dout)
+
+        grad = {}
+        grad["W1"] = self.layers["Affine1"].dW
+        grad["b1"] = self.layers["Affine1"].db
+        grad["W2"] = self.layers["Affine2"].dW
+        grad["b2"] = self.layers["Affine2"].db
+
+        return grad

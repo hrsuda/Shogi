@@ -132,7 +132,7 @@ class Board:
         self.array_owner = np.zeros(len(pieces),dtype=bool)
         self.array_rawname = np.zeros(len(pieces),dtype="<U2")
         self.array_promote_name = np.zeros(len(pieces),dtype="<U2")
-        self.out_data = np.zeros(160)
+        self.out_data = np.zeros(161)
         # self.positions_board = np.zeros(self.board_shape)
 
 
@@ -217,10 +217,9 @@ class Board:
         # self.get_array_promote_name()
         # self.get_array_position()
         self.get_array()
-        self.out_data[:] = 0
         self.out_data[0] = self.turn
         self.out_data[1:41] = self.array_position[:,0]
-        self.out_data[41:81] = self.array_position[0:1]
+        self.out_data[41:81] = self.array_position[:,1]
         self.out_data[81:121] = self.array_owner
         self.out_data[121:161] = self.array_promote_name == self.array_name
 
@@ -242,10 +241,13 @@ class Board:
 
             elif l == "%TORYO":
                 result = len(out)%2==1
+                out[:,-1] = result
 
+                return np.array(out,dtype=np.int8)
 
-        return np.array(out,dtype=np.int8), result
-
+            elif "%" in l:
+                print(l)
+                return None
 
 
         # pieceis = [OU(init_posision=[4,8], owner=True),
