@@ -5,7 +5,7 @@ from collections import OrderedDict
 def softmax(a):
     c = np.max(a)
     exp_a = np.exp(a-c)
-    sum_exp_a = np.sum_(exp_a)
+    sum_exp_a = np.sum(exp_a)
     return exp_a / sum_exp_a
 
 
@@ -61,7 +61,7 @@ class Sigmoid(object):
 class Affine(object):
     """docstring for Affine."""
 
-    def __init__(self, x, W, b):
+    def __init__(self, W, b):
         self.W = W
         self.b = b
         self.x = None
@@ -110,11 +110,11 @@ class TwoLayerNet(object):
         self.params = {}
         self.params["W1"] = weight_init_std * np.random.randn(input_size, hidden_size)
         self.params["b1"] = np.zeros(hidden_size)
-        self.params["W2"] = weight_init_std * np.random.randn(input_size, hidden_size)
-        self.params["b1"] = np.zeros(output_size)
+        self.params["W2"] = weight_init_std * np.random.randn(hidden_size, output_size)
+        self.params["b2"] = np.zeros(output_size)
 
 
-        self.layers = np.OrderedDict()
+        self.layers = OrderedDict()
         self.layers["Affine1"] = Affine(self.params["W1"], self.params["b1"])
         self.layers["Relu"] = Relu()
         self.layers["Affine2"] = Affine(self.params["W2"], self.params["b2"])

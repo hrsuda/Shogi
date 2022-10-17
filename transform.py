@@ -17,18 +17,18 @@ def main():
     for i,fname in enumerate(file_names):
         with open("init_posision.pkl", "rb") as f:
             pieces = pickle.load(f)
-            
-            # print(fname)
         B = Board(pieces)
+        # print(fname)
         out = B.read_file(input_dir+"/"+fname)
-        print(out)
-        if out is not None:
-            print(i)
-            output.append(out)
-        if i==100:
-            break
 
-    np.savez_compressed("./test", output)
+        if out is not None:
+            # print(i)
+            output.append(out)
+        # if i==10:
+        #     break
+
+    output = np.concatenate(output)
+    np.save("./test", output)
 
 if __name__ == "__main__":
     main()

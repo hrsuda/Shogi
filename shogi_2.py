@@ -9,8 +9,8 @@ class Piece:
         self.name = name
         self.rawname = name
         self.owner = owner
-        self.position = init_position
-        self.promote_name = "nari"
+        self.position = np.array(init_position)
+        self.promote_name = "nr"
 
         # self.full_move = np.zeros([17,17],dtype=bool)
     def promote(self):
@@ -33,7 +33,7 @@ class HISHA(Piece):
     def __init__(self, init_position, owner, name="HI"):
         super().__init__(init_position, owner, name=name)
 
-        self.promete_name = "RY"
+        self.promote_name = "RY"
         # self.set_legal_move()
         self.full_move_axis = np.zeros((4,17,17),dtype=bool)
         self.full_move_axis[0,8,0:8] = True
@@ -129,10 +129,11 @@ class Board:
         self.komadai_mask = [p.position==[0,0] for p in self.pieces]
         self.array_name = np.zeros(len(pieces),dtype="<U2")
         self.array_position = np.zeros([len(pieces),2])
+        # print(self.array_position)
         self.array_owner = np.zeros(len(pieces),dtype=bool)
         self.array_rawname = np.zeros(len(pieces),dtype="<U2")
         self.array_promote_name = np.zeros(len(pieces),dtype="<U2")
-        self.out_data = np.zeros(161)
+        self.out_data = np.zeros(162)
         # self.positions_board = np.zeros(self.board_shape)
 
 
@@ -184,8 +185,11 @@ class Board:
         self.array_owner[:] = np.array(list(map(self.get_owner, self.pieces)))
 
     def get_array(self):
-        arrays = np.array([[p.position, p.name, p.owner, p.rawname, p.promote_name] for p in self.pieces]).T
-        self.array_position, self.array_name, self.array_owner, self.rawname, self.promote_name = arrays
+        arrays = np.array([[p.position[:], p.name, p.owner, p.rawname, p.promote_name] for p in self.pieces],dtype=object).T
+
+        self.array_position[:] = list(arrays[0])
+        self.array_name[:], self.array_owner[:], self.array_rawname[:], self.array_promote_name[:] = arrays[1:]
+
 
 
     def move(self, start, goal, name):
@@ -200,14 +204,14 @@ class Board:
         mask_position = (self.array_position[:,0] == start[0]) * (self.array_position[:,1] == start[1])
         mask_rawname = self.array_rawname == name
         mask_promote_name = self.array_promote_name == name
-        p = self.pieces[(mask_rawname | mask_promote_name) & mask_position][0]
+        p = self.pieces[(mask_rawname + mask_promote_name) * mask_position][0]
         p.position = goal
 
         if ((self.array_position[:,0]==goal[0])*(self.array_position[:,1]==goal[1])).any():
             p.capture(self.pieces[(self.array_position[:,0]==goal[0])*(self.array_position[:,1]==goal[1])][0])
 
         if name!=p.name:
-            p.name = promote_name
+            p.name = p.promote_name
 
     def board_data(self):
         # self.get_array_position()
@@ -229,8 +233,9 @@ class Board:
             data = f.read().split('\n')
         out = []
         for l in data:
-            if len(l)==7:
-
+            # if (len(l)==7) and ((l[0]=="+") or (l[0]=="-")):
+            if (len(l)>6) and ((l[0]=="+") or (l[0]=="-")):
+                # print(l)
                 start = [int(l[1]),int(l[2])]
                 goal = [int(l[3]),int(l[4])]
                 name = l[5:7]
@@ -240,13 +245,17 @@ class Board:
                 out.append(self.out_data.copy())
 
             elif l == "%TORYO":
-                result = len(out)%2==1
-                out[:,-1] = result
-
+                if len(out)==0:
+                    # print("0 turn")
+                    return None
+                result = len(out)%2
+                out = np.array(out)
+                out[:,-2+result] = 1
+                # print('OK')
                 return np.array(out,dtype=np.int8)
 
             elif "%" in l:
-                print(l)
+                # print(l)
                 return None
 
 
