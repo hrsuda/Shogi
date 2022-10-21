@@ -133,7 +133,7 @@ class Board:
         self.array_owner = np.zeros(len(pieces),dtype=bool)
         self.array_rawname = np.zeros(len(pieces),dtype="<U2")
         self.array_promote_name = np.zeros(len(pieces),dtype="<U2")
-        self.out_data = np.zeros(162)
+        self.out_data = np.zeros(163)
         # self.positions_board = np.zeros(self.board_shape)
 
 

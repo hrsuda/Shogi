@@ -24,11 +24,11 @@ def main():
         if out is not None:
             # print(i)
             output.append(out)
-        if i==1000:
-            break
+        # if i==1000:
+        #     break
 
     output = np.concatenate(output)
-    np.save("./test2", output)
+    np.save(out_filename, output)
 
 if __name__ == "__main__":
     main()

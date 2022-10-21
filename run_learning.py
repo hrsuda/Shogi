@@ -14,13 +14,13 @@ def main():
     x_data = data[:,:-2]
     t_data = data[:,-2:]
 
-    print(data.shape)
-    network = TwoLayerNet(input_size=160, hidden_size=100, output_size=2,weight_init_std=1000)
+    print(data[0])
+    network = TwoLayerNet(input_size=161, hidden_size=100, output_size=2,weight_init_std=1000)
     data_size = x_data.shape[0]
 
-    iters_num = 10000
+    iters_num = 1000
     batch_size = 1000
-    learning_rate = 5e-1
+    learning_rate = 1e-3
     train_loss_list = []
     train_acc_list = []
 
