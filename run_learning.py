@@ -11,16 +11,16 @@ def main():
 
     data = np.load(data_file_name, allow_pickle=True)
     # data = data.astype(float)
-    x_data = data[:,:-2]
+    x_data = data[:,:-4]
     t_data = data[:,-2:]
 
     print(data[0])
     network = TwoLayerNet(input_size=161, hidden_size=100, output_size=2,weight_init_std=1000)
     data_size = x_data.shape[0]
 
-    iters_num = 1000
-    batch_size = 1000
-    learning_rate = 1e-3
+    iters_num = 100000
+    batch_size = 10000
+    learning_rate = 1e-6
     train_loss_list = []
     train_acc_list = []
 
@@ -48,10 +48,16 @@ def main():
         if i % iter_per_epoch == 0:
             train_acc = network.accuracy(x_data, t_data)
             train_acc_list.append(train_acc)
-            print(train_acc_list)
+
+            print(train_acc)
+    print(train_acc_list)
+    print(network.params)
+
     plt.plot(np.arange(iters_num),train_loss_list)
+
     plt.yscale('log')
     plt.savefig("hoge.pdf")
+    np.save(out_name,network.params)
 
 if __name__ == "__main__":
     main()

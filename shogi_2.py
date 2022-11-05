@@ -25,8 +25,10 @@ class Piece:
 
     def check_promote():
         return self.name==self.promote_name
+
     def _set_position(self, position):
         self.position = position
+
 
 class HISHA(Piece):
 
@@ -56,30 +58,10 @@ class HISHA(Piece):
 
         cross = self.full_move_axis[0]
 
-        # self.full_move = np.array([[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-        #                            [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-        #                            [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-        #                            [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-        #                            [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-        #                            [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-        #                            [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-        #                            [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-        #                            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-        #                            [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-        #                            [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-        #                            [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-        #                            [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-        #                            [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-        #                            [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-        #                            [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-        #                            [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0]])
 
-        # self.full_move[8,:] = True
-        # self.full_move[:,8] = True
-        # self.full_move[8,8] = False
-        # self.legal_move_nopieces = self.full_move[9-self.position[0]:18-self.position[0],
 
-                                             # 9-self.position[1]:18-self.position[1]]
+
+
 class KAKU(Piece):
 
     def __init__(self, init_position, owner, name="KA"):
@@ -122,7 +104,7 @@ class OU(Piece):
 
 
 class Board:
-    def __init__(self,pieces):
+    def __init__(self,pieces,players=["P1", "P2"]):
         self.pieces = np.array(pieces)
         self.turn = False
         self.board_shape = (9,9)
@@ -133,7 +115,8 @@ class Board:
         self.array_owner = np.zeros(len(pieces),dtype=bool)
         self.array_rawname = np.zeros(len(pieces),dtype="<U2")
         self.array_promote_name = np.zeros(len(pieces),dtype="<U2")
-        self.out_data = np.zeros(163)
+        self.out_data = np.zeros(165)
+        self.players = players
         # self.positions_board = np.zeros(self.board_shape)
 
 
@@ -233,8 +216,17 @@ class Board:
             data = f.read().split('\n')
         out = []
         for l in data:
+            if len(l)==0:
+                continue
+
+            elif l[:2]=="N+":
+                self.players[0] = l[2:]
+            elif l[:2]=="N-":
+                self.players[1] = l[2:]
+
             # if (len(l)==7) and ((l[0]=="+") or (l[0]=="-")):
-            if (len(l)>6) and ((l[0]=="+") or (l[0]=="-")):
+
+            elif (len(l)>6) and ((l[0]=="+") or (l[0]=="-")):
                 # print(l)
                 start = [int(l[1]),int(l[2])]
                 goal = [int(l[3]),int(l[4])]
@@ -251,6 +243,9 @@ class Board:
                 result = len(out)%2
                 out = np.array(out)
                 out[:,-2+result] = 1
+                out[:,-4] = "human" in self.players[0]
+                out[:,-3] = "human" in self.players[1]
+
                 # print('OK')
                 return np.array(out,dtype=np.int8)
 
