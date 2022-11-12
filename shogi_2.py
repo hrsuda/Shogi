@@ -5,13 +5,14 @@ import pandas as pd
 
 
 class Piece:
-    def __init__(self, init_position, owner, name="hoge"):
+    def __init__(self, init_position, owner, movedict={} name="hoge"):
         self.name = name
         self.rawname = name
         self.owner = owner
         self.position = np.array(init_position)
         self.promote_name = "nr"
-
+        self.move_area = np.zeros([9, 9], dtype=bool)
+        self.move_dict = move_dict
         # self.full_move = np.zeros([17,17],dtype=bool)
     def promote(self):
         self.name = sepf.promete_name
@@ -28,6 +29,15 @@ class Piece:
 
     def _set_position(self, position):
         self.position = position
+
+    def set_legal_move(self,positions,o_positions):
+        m = self.move_dict[self.name]
+        positions = positions - self.position + np.array([8,8])
+        o_positions = o_positions - self.position + np.array([8,8])
+
+        m[positions] = False
+        self.legal_move = m[9-self.position[0]:18-self.position[0],9-self.position[1]:18-self.position[1]]
+
 
 
 class HISHA(Piece):
@@ -50,14 +60,24 @@ class HISHA(Piece):
         self.move = np.zeros((2,17,17),dtype=bool)
 
 
+    # def set_legal_move(self,positions,o_positions):
+    #     positions = positions - self.position + np.array([8,8])
+    #     positions = positions.T
+    #     o_positions = o_positions - self.position + np.array([8,8])
+    #     o_positions = o_positions.T
+    #
+    #     cross = self.full_move_axis[0]
+
     def set_legal_move(self,positions,o_positions):
+        move = self.move_dict[self.name]
         positions = positions - self.position + np.array([8,8])
-        positions = positions.T
         o_positions = o_positions - self.position + np.array([8,8])
-        o_positions = o_positions.T
 
-        cross = self.full_move_axis[0]
+        for m in move:
+            positions =
 
+            m[positions] = False
+            self.legal_move = m
 
 
 
