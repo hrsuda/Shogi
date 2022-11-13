@@ -31,12 +31,13 @@ class Piece:
         self.position = position
 
     def set_legal_move(self,positions,o_positions):
-        m = self.move_dict[self.name]
+        move = self.move_dict[self.name]
         positions = positions - self.position + np.array([8,8])
         o_positions = o_positions - self.position + np.array([8,8])
 
-        m[positions] = False
-        self.legal_move = m[9-self.position[0]:18-self.position[0],9-self.position[1]:18-self.position[1]]
+        move[positions] = False
+
+        self.legal_move = move[9-self.positions[0]:18-self.position[0], 9-self.positions[1]:18-self.position[1]]
 
 
 
@@ -73,12 +74,9 @@ class HISHA(Piece):
         positions = positions - self.position + np.array([8,8])
         o_positions = o_positions - self.position + np.array([8,8])
 
-        for m in move:
-            positions =
+        move[positions] = False
 
-            m[positions] = False
-            self.legal_move = m
-
+        self.legal_move = move[9-self.positions[0]:18-self.position[0], 9-self.positions[1]:18-self.position[1]]
 
 
 
