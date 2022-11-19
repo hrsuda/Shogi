@@ -11,7 +11,7 @@ class Piece:
         self.owner = owner
         self.position = np.array(init_position)
         self.promote_name = "nr"
-        self.move_area = np.zeros([9, 9], dtype=bool)
+        self.legal_move = np.zeros([9, 9], dtype=bool)
         self.move_dict = move_dict
         # self.full_move = np.zeros([17,17],dtype=bool)
     def promote(self):
@@ -30,14 +30,24 @@ class Piece:
     def _set_position(self, position):
         self.position = position
 
-    def set_legal_move(self,positions,o_positions):
+    def _set_legal_move_board(self,positions,o_positions):
+
         move = self.move_dict[self.name]
-        positions = positions - self.position + np.array([8,8])
-        o_positions = o_positions - self.position + np.array([8,8])
+        positions = positions - self.position + np.array([7,7])
+        o_positions = o_positions - self.position + np.array([7,7])
 
         move[positions] = False
 
         self.legal_move = move[9-self.positions[0]:18-self.position[0], 9-self.positions[1]:18-self.position[1]]
+
+    def _set_legal_move_komadai(self,positions,o_positions,move_forward=0):
+
+        self.legal_move[1:,1:] = True
+        self.legal_move[move_forward
+        self.legal_move[positions] = False
+        self.legal_move[o_positions] = False
+
+
 
 
 
@@ -47,20 +57,31 @@ class HISHA(Piece):
         super().__init__(init_position, owner, name=name)
 
         self.promote_name = "RY"
+        self.move_dict = {}
         # self.set_legal_move()
-        self.full_move_axis = np.zeros((4,17,17),dtype=bool)
-        self.full_move_axis[0,8,0:8] = True
-        self.full_move_axis[1,8,9:16] = True
-        self.full_move_axis[2,0:8,8] = True
-        self.full_move_axis[3,9:16,8] = True
-        self.full_move = np.zeros((17,17),dtype=bool)
-        self.full_move[8,:] = True
-        self.full_move[:,8] = True
-        self.full_move[8,8] = False
-        self.move_axis = np.zeros((2,4,17,17),dtype=bool)
-        self.move = np.zeros((2,17,17),dtype=bool)
+        # self.full_move_axis = np.zeros((4,17,17),dtype=bool)
+        # self.full_move_axis[0,8,0:8] = True
+        # self.full_move_axis[1,8,9:16] = True
+        # self.full_move_axis[2,0:8,8] = True
+        # self.full_move_axis[3,9:16,8] = True
+        # self.full_move = np.zeros((17,17),dtype=bool)
+        # self.full_move[8,:] = True
+        # self.full_move[:,8] = True
+        # self.full_move[8,8] = False
+        # self.move_axis = np.zeros((2,4,17,17),dtype=bool)
+        # self.move = np.zeros((2,17,17),dtype=bool)
+
+        # self.move_dict["HI"] = np.zeros([4,17,17], dtype=bool)
+        # self.move_dict["HI"][0,0:8,0] = True
+        # self.move_dict["HI"][1,0,0:8] = True
+        # self.move_dict["HI"][2,17:8,0] = True
+        # self.move_dict["HI"][3,0,17:8] = True
+
+        self.move_dict["HI"] = np.zeros([1,18,18], dtype=bool)
+        self.move_dict["HI"][0,1:18] = True
 
 
+        self.move_dict["RY"] = np.zeros([2,18,18], dtype=bool)
     # def set_legal_move(self,positions,o_positions):
     #     positions = positions - self.position + np.array([8,8])
     #     positions = positions.T
@@ -73,8 +94,9 @@ class HISHA(Piece):
         move = self.move_dict[self.name]
         positions = positions - self.position + np.array([8,8])
         o_positions = o_positions - self.position + np.array([8,8])
+        for i in range(4):
+            cross = move[i][positions]
 
-        move[positions] = False
 
         self.legal_move = move[9-self.positions[0]:18-self.position[0], 9-self.positions[1]:18-self.position[1]]
 
