@@ -77,14 +77,7 @@ class HISHA(Piece):
         # self.move_dict["HI"][2,17:8,0] = True
         # self.move_dict["HI"][3,0,17:8] = True
 
-        self.move_dict["HI"] = np.zeros([1,18,18], dtype=bool)
-        self.move_dict["HI"][0,1:18] = True
 
-
-        self.move_dict["RY"] = np.zeros([2,18,18], dtype=bool)
-    # def set_legal_move(self,positions,o_positions):
-    #     positions = positions - self.position + np.array([8,8])
-    #     positions = positions.T
     #     o_positions = o_positions - self.position + np.array([8,8])
     #     o_positions = o_positions.T
     #
@@ -92,11 +85,14 @@ class HISHA(Piece):
 
     def set_legal_move(self,positions,o_positions):
         move = self.move_dict[self.name]
+        positions = positions[positions[0]==0]
+        o_positions = o_positions[o_positions[0]==0]
+
         positions = positions - self.position + np.array([8,8])
         o_positions = o_positions - self.position + np.array([8,8])
-        for i in range(4):
-            cross = move[i][positions]
 
+        for i in range(8):
+            
 
         self.legal_move = move[9-self.positions[0]:18-self.position[0], 9-self.positions[1]:18-self.position[1]]
 
