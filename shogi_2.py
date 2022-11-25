@@ -13,6 +13,7 @@ class Piece:
         self.promote_name = "nr"
         self.legal_move = np.zeros([9, 9], dtype=bool)
         self.move_dict = move_dict
+        self.move_forward = 0
         # self.full_move = np.zeros([17,17],dtype=bool)
     def promote(self):
         self.name = sepf.promete_name
@@ -33,6 +34,8 @@ class Piece:
     def _set_legal_move_board(self,positions,o_positions):
 
         move = self.move_dict[self.name]
+        if ~self.owner:
+            move = move[-1:0]
         positions = positions - self.position + np.array([7,7])
         o_positions = o_positions - self.position + np.array([7,7])
 
@@ -40,13 +43,22 @@ class Piece:
 
         self.legal_move = move[9-self.positions[0]:18-self.position[0], 9-self.positions[1]:18-self.position[1]]
 
-    def _set_legal_move_komadai(self,positions,o_positions,move_forward=0):
+    def _set_legal_move_komadai(self,positions,o_positions):
 
         self.legal_move[1:,1:] = True
-        self.legal_move[move_forward
+        if self.owner:
+            self.legal_move[:,self.move_forward:]
+        else:
+            self.legal_move[:,:-self.move_forward]
+
         self.legal_move[positions] = False
         self.legal_move[o_positions] = False
 
+    def set_legal_move(self, position, o_positions):
+        if self.position==[0,0]:
+            self._set_legal_move_komadai(positions, o_positions)
+        else:
+            self._set_legal_move_board(positions, o_positions)
 
 
 
@@ -83,18 +95,37 @@ class HISHA(Piece):
     #
     #     cross = self.full_move_axis[0]
 
-    def set_legal_move(self,positions,o_positions):
+    def _set_legal_move_board(self,positions,o_positions):
         move = self.move_dict[self.name]
-        positions = positions[positions[0]==0]
-        o_positions = o_positions[o_positions[0]==0]
+        a = np.zeros([17,17],dtype=bool)
+        positions = positions[positions[0]!=0]
+        o_positions = o_positions[o_positions[0]!=0]
+        positions_board = np.zeros([17,17],dtype=bool)
+        o_positions_board = np.zeros([17,17],dtype=bool)
+        positions_board[positions - self.position + np.array([8,8])] = True
+        o_positions_board[o_positions - self.position + np.array([8,8])] = True
+        b0 = np.array([True,True,True,True],dtype=bool)
 
-        positions = positions - self.position + np.array([8,8])
-        o_positions = o_positions - self.position + np.array([8,8])
+        for i in range(1,8):
+            x0 = [i+8,8]
+            x1 = [-i+8,8]
+            x2 = [8,i+8]
+            x3 = [8,-i+8]
+            a[x0] = b0[0] * (x0 in positions)
+            a[x1] = b0[1] * (x1 in positions)
+            a[x2] = b0[2] * (x2 in positions)
+            a[x3] = b0[3] * (x3 in positions)
+            b0[0] = b0[0] * (x0 in o_positions) * a[x0]
+            b0[1] = b0[1] * (x1 in o_positions) * a[x1]
+            b0[2] = b0[2] * (x2 in o_positions) * a[x2]
+            b0[3] = b0[3] * (x3 in o_positions) * a[x3]
 
-        for i in range(8):
-            
+        a = np.sum(a, axis=0)
+        if self.name == "RY":
+            a = a + move[1] * positions_board
 
-        self.legal_move = move[9-self.positions[0]:18-self.position[0], 9-self.positions[1]:18-self.position[1]]
+
+        self.legal_move = a[8-self.positions[0]:17-self.position[0], 8-self.positions[1]:17-self.position[1]]
 
 
 
@@ -104,22 +135,82 @@ class KAKU(Piece):
         super().__init__(init_position, owner, name=name)
         self.promote_name = "UM"
 
+    def _set_legal_move_board(self,positions,o_positions):
+        move = self.move_dict[self.name]
+        a = np.zeros([17,17],dtype=bool)
+        positions = positions[positions[0]!=0]
+        o_positions = o_positions[o_positions[0]!=0]
+        positions_board = np.zeros([17,17],dtype=bool)
+        o_positions_board = np.zeros([17,17],dtype=bool)
+        positions_board[positions - self.position + np.array([8,8])] = True
+        o_positions_board[o_positions - self.position + np.array([8,8])] = True
+        b0 = np.array([True,True,True,True],dtype=bool)
+
+        for i in range(1,8):
+            x0 = [i+8,i+8]
+            x1 = [-i+8,i+8]
+            x2 = [i+8,-i+8]
+            x3 = [-i+8,-i+8]
+            a[x0] = b0[0] * (x0 in positions)
+            a[x1] = b0[1] * (x1 in positions)
+            a[x2] = b0[2] * (x2 in positions)
+            a[x3] = b0[3] * (x3 in positions)
+            b0[0] = b0[0] * (x0 in o_positions) * a[x0]
+            b0[1] = b0[1] * (x1 in o_positions) * a[x1]
+            b0[2] = b0[2] * (x2 in o_positions) * a[x2]
+            b0[3] = b0[3] * (x3 in o_positions) * a[x3]
+
+        a = np.sum(a, axis=0)
+        if self.name == "UM":
+            a = a + move[1] * positions_board
+
+
+        self.legal_move = a[8-self.positions[0]:17-self.position[0], 8-self.positions[1]:17-self.position[1]]
+
 class FU(Piece):
 
     def __init__(self, init_position, owner, name="FU"):
         super().__init__(init_position, owner, name=name)
         self.promote_name = "TO"
+        self.move_forward = 1
 class KYO(Piece):
 
     def __init__(self, init_position, owner, name="KY"):
         super().__init__(init_position, owner,name=name)
         self.promote_name = "NY"
+        self.move_forward = 1
+
+
+    def _set_legal_move_board(self,positions,o_positions):
+        move = self.move_dict[self.name]
+        a = np.zeros([17,17],dtype=bool)
+        positions = positions[positions[0]!=0]
+        o_positions = o_positions[o_positions[0]!=0]
+        positions_board = np.zeros([17,17],dtype=bool)
+        o_positions_board = np.zeros([17,17],dtype=bool)
+        positions_board[positions - self.position + np.array([8,8])] = True
+        o_positions_board[o_positions - self.position + np.array([8,8])] = True
+        b0 = np.array([True],dtype=bool)
+        if self.name=="KY":
+            for i in range(1,8):
+                x0 = [8,i+8]
+                a[x0] = b0[0] * (x0 in positions)
+                b0[0] = b0[0] * (x0 in o_positions) * a[x0]
+
+            a = np.sum(a, axis=0)
+        else:
+            a = move[1] * positions_board
+
+
+        self.legal_move = a[8-self.positions[0]:17-self.position[0], 8-self.positions[1]:17-self.position[1]]
+
 
 class KEIMA(Piece):
 
     def __init__(self, init_position, owner, name="KE"):
         super().__init__(init_position, owner, name=name)
         self.promote_name = "NK"
+        self.move_forward = 2
 
 class GIN(Piece):
 
