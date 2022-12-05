@@ -1,15 +1,20 @@
 import numpy as np
-import pandas as pd
+import pickle
+with open('moves.pkl', 'rb') as f:
+    MOVE_DICT = pickle.load(f)
+
+
+
 # import scipy as sp
 
 
 
 class Piece:
-    def __init__(self, init_position, owner, movedict={} name="hoge"):
+    def __init__(self, init_position, owner, move_dict=MOVE_DICT, name="hoge"):
         self.name = name
         self.rawname = name
         self.owner = owner
-        self.position = np.array(init_position)
+        self.position = init_position
         self.promote_name = "nr"
         self.legal_move = np.zeros([9, 9], dtype=bool)
         self.move_dict = move_dict
@@ -19,7 +24,7 @@ class Piece:
         self.name = sepf.promete_name
 
     def captured(self):
-        self.owner = ~self.owner
+        self.owner = not self.owner
         self.position = [0, 0]
 
     def capture(self,target):
@@ -33,15 +38,19 @@ class Piece:
 
     def _set_legal_move_board(self,positions,o_positions):
 
-        move = self.move_dict[self.name]
-        if ~self.owner:
-            move = move[-1:0]
-        positions = positions - self.position + np.array([7,7])
-        o_positions = o_positions - self.position + np.array([7,7])
+        move = self.move_dict[self.name].copy()
+        positions = positions[positions[:,0]!=0]
+        o_positions = o_positions[o_positions[:,0]!=0]
+        positions = positions - self.position + 8
+        o_positions = o_positions - self.position + 8
 
-        move[positions] = False
+        if not self.owner:
+            move = move[::-1]
+            positions, o_positions = o_positions, positions
 
-        self.legal_move = move[9-self.positions[0]:18-self.position[0], 9-self.positions[1]:18-self.position[1]]
+        # print(move)
+        move[positions.T.astype(int)[0],positions.T.astype(int)[1]] = False
+        self.legal_move = move[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
 
     def _set_legal_move_komadai(self,positions,o_positions):
 
@@ -54,8 +63,8 @@ class Piece:
         self.legal_move[positions] = False
         self.legal_move[o_positions] = False
 
-    def set_legal_move(self, position, o_positions):
-        if self.position==[0,0]:
+    def set_legal_move(self, positions, o_positions):
+        if self.position[0]==0:
             self._set_legal_move_komadai(positions, o_positions)
         else:
             self._set_legal_move_board(positions, o_positions)
@@ -69,7 +78,7 @@ class HISHA(Piece):
         super().__init__(init_position, owner, name=name)
 
         self.promote_name = "RY"
-        self.move_dict = {}
+
         # self.set_legal_move()
         # self.full_move_axis = np.zeros((4,17,17),dtype=bool)
         # self.full_move_axis[0,8,0:8] = True
@@ -96,36 +105,48 @@ class HISHA(Piece):
     #     cross = self.full_move_axis[0]
 
     def _set_legal_move_board(self,positions,o_positions):
-        move = self.move_dict[self.name]
-        a = np.zeros([17,17],dtype=bool)
-        positions = positions[positions[0]!=0]
-        o_positions = o_positions[o_positions[0]!=0]
-        positions_board = np.zeros([17,17],dtype=bool)
-        o_positions_board = np.zeros([17,17],dtype=bool)
-        positions_board[positions - self.position + np.array([8,8])] = True
-        o_positions_board[o_positions - self.position + np.array([8,8])] = True
+        move = self.move_dict[self.name].copy()
+        positions = positions[positions[:,0]!=0]
+        o_positions = o_positions[o_positions[:,0]!=0]
+        positions = (positions - self.position + 8).astype(int)
+        o_positions = (o_positions - self.position + 8).astype(int)
+
+        if not self.owner:
+            positions, o_positions = o_positions, positions
+
+        a = np.zeros((17,17), dtype=bool)
+
         b0 = np.array([True,True,True,True],dtype=bool)
+        positions = [tuple(p) for p in positions]
+        o_positions = [tuple(p) for p in o_positions]
+        # print(positions)
+        for i in range(1,9):
+            x0 = (i+8,8)
+            x1 = (-i+8,8)
+            x2 = (8,i+8)
+            x3 = (8,-i+8)
 
-        for i in range(1,8):
-            x0 = [i+8,8]
-            x1 = [-i+8,8]
-            x2 = [8,i+8]
-            x3 = [8,-i+8]
-            a[x0] = b0[0] * (x0 in positions)
-            a[x1] = b0[1] * (x1 in positions)
-            a[x2] = b0[2] * (x2 in positions)
-            a[x3] = b0[3] * (x3 in positions)
-            b0[0] = b0[0] * (x0 in o_positions) * a[x0]
-            b0[1] = b0[1] * (x1 in o_positions) * a[x1]
-            b0[2] = b0[2] * (x2 in o_positions) * a[x2]
-            b0[3] = b0[3] * (x3 in o_positions) * a[x3]
+            a[x0] = b0[0] * (x0 not in positions)
+            a[x1] = b0[1] * (x1 not in positions)
+            a[x2] = b0[2] * (x2 not in positions)
+            a[x3] = b0[3] * (x3 not in positions)
+            b0[0] = b0[0] * (x0 not in o_positions) * a[x0]
+            b0[1] = b0[1] * (x1 not in o_positions) * a[x1]
+            b0[2] = b0[2] * (x2 not in o_positions) * a[x2]
+            b0[3] = b0[3] * (x3 not in o_positions) * a[x3]
+        # print(a)
+        # print(b0)
 
-        a = np.sum(a, axis=0)
         if self.name == "RY":
+            positions_board = np.zeros([17,17],dtype=bool)
+            # o_positions_board = np.zeros([17,17],dtype=bool)
+            positions_board[positions[0],positions[1]] = True
+            # o_positions_board[o_positions[0],o_positions[1]] = True
+
             a = a + move[1] * positions_board
 
 
-        self.legal_move = a[8-self.positions[0]:17-self.position[0], 8-self.positions[1]:17-self.position[1]]
+        self.legal_move = a[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
 
 
 
@@ -136,36 +157,42 @@ class KAKU(Piece):
         self.promote_name = "UM"
 
     def _set_legal_move_board(self,positions,o_positions):
-        move = self.move_dict[self.name]
+        move = self.move_dict[self.name].copy()
+        positions = positions[positions[:,0]!=0]
+        o_positions = o_positions[o_positions[:,0]!=0]
+        positions = (positions - self.position + 8).astype(int)
+        o_positions = (o_positions - self.position + 8).astype(int)
+
+        if not self.owner:
+            positions, o_positions = o_positions, positions
         a = np.zeros([17,17],dtype=bool)
-        positions = positions[positions[0]!=0]
-        o_positions = o_positions[o_positions[0]!=0]
-        positions_board = np.zeros([17,17],dtype=bool)
-        o_positions_board = np.zeros([17,17],dtype=bool)
-        positions_board[positions - self.position + np.array([8,8])] = True
-        o_positions_board[o_positions - self.position + np.array([8,8])] = True
+        positions = [tuple(p) for p in positions]
+        o_positions = [tuple(p) for p in o_positions]
+
         b0 = np.array([True,True,True,True],dtype=bool)
 
-        for i in range(1,8):
-            x0 = [i+8,i+8]
-            x1 = [-i+8,i+8]
-            x2 = [i+8,-i+8]
-            x3 = [-i+8,-i+8]
-            a[x0] = b0[0] * (x0 in positions)
-            a[x1] = b0[1] * (x1 in positions)
-            a[x2] = b0[2] * (x2 in positions)
-            a[x3] = b0[3] * (x3 in positions)
-            b0[0] = b0[0] * (x0 in o_positions) * a[x0]
-            b0[1] = b0[1] * (x1 in o_positions) * a[x1]
-            b0[2] = b0[2] * (x2 in o_positions) * a[x2]
-            b0[3] = b0[3] * (x3 in o_positions) * a[x3]
+        for i in range(1,9):
+            x0 = (i+8,i+8)
+            x1 = (-i+8,i+8)
+            x2 = (i+8,-i+8)
+            x3 = (-i+8,-i+8)
+            a[x0] = b0[0] * (x0 not in positions)
+            a[x1] = b0[1] * (x1 not in positions)
+            a[x2] = b0[2] * (x2 not in positions)
+            a[x3] = b0[3] * (x3 not in positions)
+            b0[0] = b0[0] * (x0 not in o_positions) * a[x0]
+            b0[1] = b0[1] * (x1 not in o_positions) * a[x1]
+            b0[2] = b0[2] * (x2 not in o_positions) * a[x2]
+            b0[3] = b0[3] * (x3 not in o_positions) * a[x3]
 
-        a = np.sum(a, axis=0)
+
         if self.name == "UM":
+            positions_board = np.zeros([17,17],dtype=bool)
+            positions_board[positions[0],positions[1]] = True
+
             a = a + move[1] * positions_board
+        self.legal_move = a[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
 
-
-        self.legal_move = a[8-self.positions[0]:17-self.position[0], 8-self.positions[1]:17-self.position[1]]
 
 class FU(Piece):
 
@@ -184,26 +211,41 @@ class KYO(Piece):
     def _set_legal_move_board(self,positions,o_positions):
         move = self.move_dict[self.name]
         a = np.zeros([17,17],dtype=bool)
-        positions = positions[positions[0]!=0]
-        o_positions = o_positions[o_positions[0]!=0]
-        positions_board = np.zeros([17,17],dtype=bool)
-        o_positions_board = np.zeros([17,17],dtype=bool)
-        positions_board[positions - self.position + np.array([8,8])] = True
-        o_positions_board[o_positions - self.position + np.array([8,8])] = True
+        positions = positions[positions[:,0]!=0]
+        o_positions = o_positions[o_positions[:,0]!=0]
+        positions = (positions - self.position + 8).T.astype(int)
+        o_positions = (o_positions - self.position + 8).T.astype(int)
+
+        if not self.owner:
+            # print(self.position)
+            move = move[::-1]
+            positions, o_positions = o_positions, positions
+        positions = [tuple(p) for p in positions]
+        o_positions = [tuple(p) for p in o_positions]
+
         b0 = np.array([True],dtype=bool)
         if self.name=="KY":
-            for i in range(1,8):
-                x0 = [8,i+8]
-                a[x0] = b0[0] * (x0 in positions)
-                b0[0] = b0[0] * (x0 in o_positions) * a[x0]
+            if self.owner:
+                start,stop = 1, 9
+            else:
+                start,stop = -1, -9
+            for i in range(start,stop):
+                x0 = (8,i+8)
+                a[x0] = b0[0] * (x0 not in positions)
+                b0[0] = b0[0] * (x0 not in o_positions)
+                # print(b0[0])
+                # print(a[x0[0],0])
+                b0[0] *= a[x0]
 
-            a = np.sum(a, axis=0)
+            # a = np.sum(a, axis=0)
         else:
-            a = move[1] * positions_board
+            positions_board = np.zeros([17,17],dtype=bool)
+            positions_board[positions[0],positions[1]] = True
+
+            a = move * positions_board
 
 
-        self.legal_move = a[8-self.positions[0]:17-self.position[0], 8-self.positions[1]:17-self.position[1]]
-
+        self.legal_move = a[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
 
 class KEIMA(Piece):
 
@@ -244,6 +286,16 @@ class Board:
         self.array_promote_name = np.zeros(len(pieces),dtype="<U2")
         self.out_data = np.zeros(165)
         self.players = players
+        self.raw_names = ["OU", "HI", "KA", "KI", "GI", "KE", "KY", "FU"]
+        self.promote_names = ["RY", "UM", "NG", "NK", "NY", "TO"]
+        self.promote_names_dict = list(zip(["RY", "UM", "NG", "NK", "NY", "TO"],["HI","KA","GI","KE","KY","FU"]))
+        self.names_dict = list(zip(
+        ["OU", "HI", "RY", "KA", "UM", "KI", "GI", "NG", "KE", "NK", "KY", "NY", "FU", "TO"],
+        ["OU", "HI", "HI", "KA", "KA", "KI", "GI", "GI", "KE", "KE", "KY", "KY", "FU", "FU"]
+        ))
+        self.names = self.raw_names + self.promote_names
+        # self.raw_names_dict = {v: k for k, v in self.promote_names_dict.items()}
+
         # self.positions_board = np.zeros(self.board_shape)
 
 
@@ -320,24 +372,98 @@ class Board:
         if ((self.array_position[:,0]==goal[0])*(self.array_position[:,1]==goal[1])).any():
             p.capture(self.pieces[(self.array_position[:,0]==goal[0])*(self.array_position[:,1]==goal[1])][0])
 
-        if name!=p.name:
+        if name !=p.name:
             p.name = p.promote_name
 
-    def board_data(self):
-        # self.get_array_position()
-        # self.get_array_name()
-        # self.get_array_owner()
-        # self.get_array_rawname()
-        # self.get_array_promote_name()
-        # self.get_array_position()
-        self.get_array()
-        self.out_data[0] = self.turn
-        self.out_data[1:41] = self.array_position[:,0]
-        self.out_data[41:81] = self.array_position[:,1]
-        self.out_data[81:121] = self.array_owner
-        self.out_data[121:161] = self.array_promote_name == self.array_name
+    # def board_data(self):
+    #     # self.get_array_position()
+    #     # self.get_array_name()
+    #     # self.get_array_owner()
+    #     # self.get_array_rawname()
+    #     # self.get_array_promote_name()
+    #     # self.get_array_position()
+    #     self.get_array()
+    #     self.out_data[0] = self.turn
+    #     self.out_data[1:41] = self.array_position[:,0]
+    #     self.out_data[41:81] = self.array_position[:,1]
+    #     self.out_data[81:121] = self.array_owner
+    #     self.out_data[121:161] = self.array_promote_name == self.array_name
 
-    def read_file(self, filename):
+    def clear(self):
+        for p in self.pieces:
+            p.position = (0,0)
+            p.name = p.rawname
+            p.owner = 1
+
+    def board_from_data(self, data):
+        self.clear()
+        self.get_array()
+        for n in self.promote_names:
+            d = data[n]
+            a = np.where(d)
+            nn = self.promote_names_dict[n]
+            name_mask = self.names == nn
+            target_p = self.pieces[name_mask]
+            for i,x in enumerate(a):
+                p = target_p[i]
+                p.name = n
+                p.owner = 1 - a[i, 0]
+                p.position = a[i, 1:]
+
+        for n in self.raw_names:
+            d = data[n]
+            a = np.where(d)
+            name_mask = self.names == n
+            target_p = self.pieces[name_mask]
+            for i,x in enumerate(a):
+                p = target_p[i]
+                p.name = n
+                p.owner = 1 - a[i, 0]
+                p.position += a[i, 1:]
+
+
+
+    def move_data_tmp(self, start, goal, name):
+        data = self.out_data.copy()
+
+        if start[0] == 0:
+
+        else:
+            for n in self.names:
+                d = data[n]
+
+                if d[1-self.turn][tuple(start)]:
+                    d[1-self.turn][tuple(start)] = 0
+                    d[1-self.turn][tuple(goal)] = 1
+
+                if d[self.turn][tuple(goal)]:
+                    d[self.turn][tuple(goal)] = 0
+
+                    data[self.names_dict[n][1-self.turn][0,0] += 1
+
+        return data
+
+
+
+
+
+
+
+
+
+
+    def board_data(self):
+        names = ["OU", "HI", "RY", "KA", "UM", "KI", "GI", "NG", "KE", "NK", "KY", "NY", "FU", "TO"]
+
+        data = np.zeros([14,2,10,10])
+        self.out_data = dict(zip(names, data))
+        for p in self.pieces:
+            self.out_data[p.name][not p.owner,p.position] = True
+
+
+
+
+    def read_file(self, filename, ):
         # data = pf.read_csv(filename, comment="'", header=hoge)
         with open(filename) as f:
             data = f.read().split('\n')
@@ -359,7 +485,7 @@ class Board:
                 goal = [int(l[3]),int(l[4])]
                 name = l[5:7]
                 self.move(start, goal, name)
-                self.turn = ~self.turn
+                self.turn = not self.turn
                 self.board_data()
                 out.append(self.out_data.copy())
 
@@ -379,6 +505,80 @@ class Board:
             elif "%" in l:
                 # print(l)
                 return None
+
+    def read_file_with_bad(self, filename, ):
+        # data = pf.read_csv(filename, comment="'", header=hoge)
+        with open(filename) as f:
+            data = f.read().split('\n')
+
+        l0 = None
+        out = []
+        good = []
+        for l in data:
+            if len(l)==0:
+                continue
+
+            elif l[:2]=="N+":
+                self.players[0] = l[2:]
+            elif l[:2]=="N-":
+                self.players[1] = l[2:]
+
+            # if (len(l)==7) and ((l[0]=="+") or (l[0]=="-")):
+
+            elif (len(l)>6) and ((l[0]=="+") or (l[0]=="-")):
+                # print(l)
+                if l0 in None:continue
+                start = [int(l0[1]),int(l0[2])]
+                goal = [int(l0[3]),int(l0[4])]
+                name = l0[5:7]
+                self.turn = not self.turn
+                self.board_data()
+                moves = self.get_legal_moves()
+                a = [self.move_data_tmp([int(m[0]),int(m[1])],goal = [int(m[2]),int(m[3])],l0[4:6]) for m in moves]
+                self.move(start, goal, name)
+                out.append(a)
+                good.append(moves == l[1:6])
+
+                l0 = l
+
+            elif l == "%TORYO":
+                if len(out)==0:
+                    # print("0 turn")
+                    return None
+                result = len(out)%2
+                out = np.array(out)
+                out[:,-2+result] = 1
+                out[:,-4] = "human" in self.players[0]
+                out[:,-3] = "human" in self.players[1]
+
+                # print('OK')
+                return out,good
+
+            elif "%" in l:
+                # print(l)
+                return None
+
+    def get_legal_moves(self):
+        moves = []
+        self.get_array()
+        positions = self.array_position[self.array_owner]
+        o_positions = self.array_position[~self.array_owner]
+        for p in self.pieces:
+            p.set_legal_move(positions, o_positions)
+            move_int = list(zip(*np.where(p.legal_move)))
+            for mi in move_int:
+                if (p.owner * (2*mi[0] - 10) + 10 - mi[0] <= p.move_forward):
+                    moves.append(str(p.position[0])+str(p.position[1])+str(mi[0]+1)+str(mi[1]+1)+p.name)
+                if p.name in self.promote_names_dict.items() and p.position[0] != 0 :
+                    if (p.owner * (2*mi[0] - 10) + 10 - mi[0] <= 3) or (p.owner * (2*p.position[0] - 10) + 10 - p.position[0] <= 3):
+                        moves.append(str(p.position[0])+str(p.position[1])+str(mi[0]+1)+str(mi[1]+1)+p.promote_name)
+        return moves
+
+
+
+
+
+
 
 
         # pieceis = [OU(init_posision=[4,8], owner=True),

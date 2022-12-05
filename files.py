@@ -1,6 +1,7 @@
 import os
 import sys
 import numpy as np
+import pickle
 
 
 # moves = {"FU":[[0,1]],
@@ -394,7 +395,7 @@ def move_output():
                             dtype=bool
                             )
 
-    moves["UM"] = np.array([[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    moves["UM"] = np.array([[[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
                             [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
                             [0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0],
                             [0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0],
@@ -431,4 +432,6 @@ def move_output():
                             ],
                             dtype=bool
                             )
+    with open('moves.pkl', 'wb') as f:
+        pickle.dump(moves, f)
     return moves

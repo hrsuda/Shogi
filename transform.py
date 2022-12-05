@@ -14,12 +14,13 @@ def main():
 
     file_names = files.get_file_names(input_dir, file_type="csa")
     output = []
+    out_0 = None
     for i,fname in enumerate(file_names):
         with open("init_posision.pkl", "rb") as f:
             pieces = pickle.load(f)
         B = Board(pieces)
         # print(fname)
-        out = B.read_file(input_dir+"/"+fname)
+        out,good = B.read_file(input_dir+"/"+fname)
 
         if out is not None:
             # print(i)
@@ -27,8 +28,31 @@ def main():
         # if i==1000:
         #     break
 
-    output = np.concatenate(output)
     np.save(out_filename, output)
+
+# def main():
+#     init_position.main()
+#     args = sys.argv
+#     input_dir = args[1]
+#     out_filename = args[2]
+#
+#     file_names = files.get_file_names(input_dir, file_type="csa")
+#     output = []
+#     for i,fname in enumerate(file_names):
+#         with open("init_posision.pkl", "rb") as f:
+#             pieces = pickle.load(f)
+#         B = Board(pieces)
+#         # print(fname)
+#         out = B.read_file(input_dir+"/"+fname)
+#
+#         if out is not None:
+#             # print(i)
+#             output.append(out)
+#         # if i==1000:
+#         #     break
+#
+#     output = np.concatenate(output)
+#     np.save(out_filename, output)
 
 if __name__ == "__main__":
     main()
