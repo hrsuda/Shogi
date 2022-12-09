@@ -16,7 +16,7 @@ class Piece:
         self.owner = owner
         self.position = init_position
         self.promote_name = "nr"
-        self.legal_move = np.zeros([9, 9], dtype=bool)
+        self.legal_move = np.zeros([10, 10], dtype=int)
         self.move_dict = move_dict
         self.move_forward = 0
         # self.full_move = np.zeros([17,17],dtype=bool)
@@ -53,15 +53,17 @@ class Piece:
         self.legal_move = move[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
 
     def _set_legal_move_komadai(self,positions,o_positions):
+        positions = positions.T.astype(int) -1
+        o_positions = o_positions.T.astype(int)-1
 
-        self.legal_move[1:,1:] = True
+        self.legal_move[...] = True
         if self.owner:
-            self.legal_move[:,self.move_forward:]
+            self.legal_move[:,self.move_forward:] = 0
         else:
-            self.legal_move[:,:-self.move_forward]
+            self.legal_move[:,:-self.move_forward] = 0
 
-        self.legal_move[positions] = False
-        self.legal_move[o_positions] = False
+        self.legal_move[positions] = 0
+        self.legal_move[o_positions] = 0
 
     def set_legal_move(self, positions, o_positions):
         if self.position[0]==0:
@@ -200,6 +202,26 @@ class FU(Piece):
         super().__init__(init_position, owner, name=name)
         self.promote_name = "TO"
         self.move_forward = 1
+
+    def _set_legal_move_komadai(self,positions,o_positions):
+        positions = positions.T.astype(int) -1
+        o_positions = o_positions.T.astype(int)-1
+
+
+
+
+
+
+        self.legal_move[...] = True
+        if self.owner:
+            self.legal_move[:,self.move_forward:] = 0
+        else:
+            self.legal_move[:,:-self.move_forward] = 0
+
+        self.legal_move[positions] = False
+        self.legal_move[o_positions] = False
+
+
 class KYO(Piece):
 
     def __init__(self, init_position, owner, name="KY"):
@@ -275,7 +297,7 @@ class OU(Piece):
 class Board:
     def __init__(self,pieces,players=["P1", "P2"]):
         self.pieces = np.array(pieces)
-        self.turn = False
+        self.turn = 1
         self.board_shape = (9,9)
         self.komadai_mask = [p.position==[0,0] for p in self.pieces]
         self.array_name = np.zeros(len(pieces),dtype="<U2")
@@ -289,7 +311,7 @@ class Board:
         self.raw_names = ["OU", "HI", "KA", "KI", "GI", "KE", "KY", "FU"]
         self.promote_names = ["RY", "UM", "NG", "NK", "NY", "TO"]
         self.promote_names_dict = list(zip(["RY", "UM", "NG", "NK", "NY", "TO"],["HI","KA","GI","KE","KY","FU"]))
-        self.names_dict = list(zip(
+        self.names_dict = dict(zip(
         ["OU", "HI", "RY", "KA", "UM", "KI", "GI", "NG", "KE", "NK", "KY", "NY", "FU", "TO"],
         ["OU", "HI", "HI", "KA", "KA", "KI", "GI", "GI", "KE", "KE", "KY", "KY", "FU", "FU"]
         ))
@@ -427,10 +449,14 @@ class Board:
         data = self.out_data.copy()
 
         if start[0] == 0:
+            d[name][1-self.turn][tuple(goal)] = 1
+            data[name][1-self.turn][0,0] -= 1
+
 
         else:
             for n in self.names:
                 d = data[n]
+                # print(d)
 
                 if d[1-self.turn][tuple(start)]:
                     d[1-self.turn][tuple(start)] = 0
@@ -439,7 +465,7 @@ class Board:
                 if d[self.turn][tuple(goal)]:
                     d[self.turn][tuple(goal)] = 0
 
-                    data[self.names_dict[n][1-self.turn][0,0] += 1
+                    data[self.names_dict[n]][1-self.turn][0,0] += 1
 
         return data
 
@@ -457,8 +483,9 @@ class Board:
 
         data = np.zeros([14,2,10,10])
         self.out_data = dict(zip(names, data))
+
         for p in self.pieces:
-            self.out_data[p.name][not p.owner,p.position] = True
+            self.out_data[p.name][int(p.owner)][p.position] += 1
 
 
 
@@ -485,7 +512,7 @@ class Board:
                 goal = [int(l[3]),int(l[4])]
                 name = l[5:7]
                 self.move(start, goal, name)
-                self.turn = not self.turn
+                self.turn = 1 - self.turn
                 self.board_data()
                 out.append(self.out_data.copy())
 
@@ -514,6 +541,7 @@ class Board:
         l0 = None
         out = []
         good = []
+        print(filename)
         for l in data:
             if len(l)==0:
                 continue
@@ -527,35 +555,44 @@ class Board:
 
             elif (len(l)>6) and ((l[0]=="+") or (l[0]=="-")):
                 # print(l)
-                if l0 in None:continue
-                start = [int(l0[1]),int(l0[2])]
-                goal = [int(l0[3]),int(l0[4])]
-                name = l0[5:7]
-                self.turn = not self.turn
+
+                start = [int(l[1]),int(l[2])]
+                goal = [int(l[3]),int(l[4])]
+                name = l[5:7]
                 self.board_data()
                 moves = self.get_legal_moves()
-                a = [self.move_data_tmp([int(m[0]),int(m[1])],goal = [int(m[2]),int(m[3])],l0[4:6]) for m in moves]
-                self.move(start, goal, name)
-                out.append(a)
-                good.append(moves == l[1:6])
+                a = [np.array(list(self.move_data_tmp([int(m[0]),int(m[1])],goal = [int(m[2]),int(m[3])],name=l[4:6]).values())) for m in moves]
+                a = np.array(a)
+                aa = np.zeros([len(a),2,14,2,10,10])
 
-                l0 = l
+                # answer = self.out_data.copy()
+                aa[:,0] = np.array(list(self.out_data.copy().values()))
+                aa[:,1] = a
+                good.append((np.array(moves) == l[1:7]))
+                self.move(start, goal, name)
+
+                self.turn = 1- self.turn
+
 
             elif l == "%TORYO":
-                if len(out)==0:
-                    # print("0 turn")
+                if len(aa)==0:
+                    print("0 turn")
                     return None
-                result = len(out)%2
-                out = np.array(out)
-                out[:,-2+result] = 1
-                out[:,-4] = "human" in self.players[0]
-                out[:,-3] = "human" in self.players[1]
+                print(good)
+                out = np.concatenate(aa,axis=0)
+                good = np.concatenate(good,axis=0)
 
-                # print('OK')
+
+                # out[:,-2+result] = 1
+                # out[:,-4] = "human" in self.players[0]
+                # out[:,-3] = "human" in self.players[1]
+
+                print('OK')
+
                 return out,good
 
             elif "%" in l:
-                # print(l)
+                print('bad')
                 return None
 
     def get_legal_moves(self):
@@ -569,7 +606,7 @@ class Board:
             for mi in move_int:
                 if (p.owner * (2*mi[0] - 10) + 10 - mi[0] <= p.move_forward):
                     moves.append(str(p.position[0])+str(p.position[1])+str(mi[0]+1)+str(mi[1]+1)+p.name)
-                if p.name in self.promote_names_dict.items() and p.position[0] != 0 :
+                if (p.name in self.raw_names) and (p.position[0] != 0) :
                     if (p.owner * (2*mi[0] - 10) + 10 - mi[0] <= 3) or (p.owner * (2*p.position[0] - 10) + 10 - p.position[0] <= 3):
                         moves.append(str(p.position[0])+str(p.position[1])+str(mi[0]+1)+str(mi[1]+1)+p.promote_name)
         return moves
