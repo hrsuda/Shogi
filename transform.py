@@ -31,27 +31,31 @@ def main():
         out_g = out[good]
         # out99 = out2[:,::-1,9:0:-1,9:0:-1]
         # out2 = out2[:,:,::-1,:,:]
-        out[0::2,:,:,1:,1:] = out[0::2:,:,::-1,9:0:-1,9:0:-1]
+        out[1::2,:,:,1:,1:] = out[1::2,:,::-1,9:0:-1,9:0:-1]
+        # out[1::2,:,:,1:,1:] = out[0::2,:,::-1,9:0:-1,9:0:-1]
 
-        l = len(out)
-        ind1 = np.arange(0,l-1,2)
-        ind2 = np.arange(1,l-1,2)
-
-        couple = np.zeros(l-1,2,14,2,10,10)
-
-        couple[ind1,0] = out[ind1]
-        couple[ind1,1] = out[ind1 + 1]
-        couple[ind2,0] = out2[ind2]
-        couple[ind2,1] = out2[ind2 + 1]
-        couple[0::2,0] = out[0::2:,:,::-1,9:0:-1,9:0:-1]
-
+        # l = len(out)
+        # ind1 = np.arange(0,l-1,2)
+        # ind2 = np.arange(1,l-1,2)
+        #
+        # couple = np.zeros(l-1,2,14,2,10,10)
+        #
+        # couple[ind1,0] = out[ind1]
+        # couple[ind1,1] = out[ind1 + 1]
+        # couple[ind2,0] = out2[ind2]
+        # couple[ind2,1] = out2[ind2 + 1]
+        # couple[0::2,0] = out[0::2:,:,::-1,9:0:-1,9:0:-1]
+        #
         if out is not None:
-            # print(i)
+        #     # print(i)
             output.append(out)
-            output2.append(a)
+            output2.append(good)
+
+
         if i==1000:
             break
-
+    output = np.concatenate(output, axis=0)
+    output2 = np.concatenate(output2, axis=0)
     np.save(out_filename, output)
     np.save(out_filename+'_t', output2)
 

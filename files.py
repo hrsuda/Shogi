@@ -20,6 +20,46 @@ import pickle
 #         }
 
 
+def read_csa_file(filename):
+    players = ["player1", "player2"]
+
+    move_data = []
+
+    with open(filename) as f:
+        data = f.read().split('\n')
+    for l in data:
+        if len(l)==0:
+            continue
+
+        elif l[:2]=="N+":
+            players[0] = l[2:]
+        elif l[:2]=="N-":
+            players[1] = l[2:]
+
+        # if (len(l)==7) and ((l[0]=="+") or (l[0]=="-")):
+
+        elif (len(l)>6) and ((l[0]=="+") or (l[0]=="-")):
+            # print(l)
+            move_data.append(l[1:])
+
+
+        elif l == "%TORYO":
+
+
+            # out[:,-2+result] = 1
+            # out[:,-4] = "human" in self.players[0]
+            # out[:,-3] = "human" in self.players[1]
+
+
+
+            return players,move_data
+
+        elif "%" in l:
+            return players,move_data
+
+
+
+
 def get_file_names(dir_path, file_type="csa"):
     files = os.listdir(dir_path)
     out = [n for n in files if file_type == n[-3:]]

@@ -1,5 +1,6 @@
 import numpy as np
 import pickle
+import files
 with open('moves.pkl', 'rb') as f:
     MOVE_DICT = pickle.load(f)
 
@@ -36,25 +37,35 @@ class Piece:
     def _set_position(self, position):
         self.position = position
 
-    def _set_legal_move_board(self,positions,o_positions):
+    def _set_legal_move_board(self,board_data):
+
+        board_data_array = np.array(list(board_data.values()))
+        s_positions_board = np.sum(board_data_array[:, 0, 1:, 1:],axis=0)
+        g_positions_board = np.sum(board_data_array[:, 1, 1:, 1:],axis=0)
+
+
 
         move = self.move_dict[self.name].copy()
-        positions = positions[positions[:,0]!=0]
-        o_positions = o_positions[o_positions[:,0]!=0]
-        positions = positions - self.position + 8
-        o_positions = o_positions - self.position + 8
+        # positions = positions[positions[:,0]!=0]
+        # o_positions = o_positions[o_positions[:,0]!=0]
+        # positions = positions - self.position + 8
+        # o_positions = o_positions - self.position + 8
 
         if not self.owner:
             move = move[::-1]
-            positions, o_positions = o_positions, positions
+            s_positions_board, g_positions_board = g_positions_board, s_positions_board
 
         # print(move)
-        move[positions.T.astype(int)[0],positions.T.astype(int)[1]] = False
         self.legal_move = move[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
+        self.legal_move *= s_positions_board
 
-    def _set_legal_move_komadai(self,positions,o_positions):
-        positions = positions.T.astype(int) -1
-        o_positions = o_positions.T.astype(int)-1
+
+    def _set_legal_move_komadai(self,board_data):
+
+
+        board_data_array = np.array(list(board_data.values()))
+        s_positions_board = np.sum(board_data_array[:, 0, 1:, 1:],axis=0)
+        g_positions_board = np.sum(board_data_array[:, 1, 1:, 1:],axis=0)
 
         self.legal_move[...] = True
         if self.owner:
@@ -62,14 +73,16 @@ class Piece:
         else:
             self.legal_move[:,:-self.move_forward] = 0
 
-        self.legal_move[positions] = 0
-        self.legal_move[o_positions] = 0
+        self.legal_move *= s_positions_board * g_positions_board
 
-    def set_legal_move(self, positions, o_positions):
+
+
+
+    def set_legal_move(self, board_data):
         if self.position[0]==0:
-            self._set_legal_move_komadai(positions, o_positions)
+            self._set_legal_move_komadai(board_data)
         else:
-            self._set_legal_move_board(positions, o_positions)
+            self._set_legal_move_board(board_data)
 
 
 
@@ -106,21 +119,23 @@ class HISHA(Piece):
     #
     #     cross = self.full_move_axis[0]
 
-    def _set_legal_move_board(self,positions,o_positions):
+    def _set_legal_move_board(self,board_data):
         move = self.move_dict[self.name].copy()
-        positions = positions[positions[:,0]!=0]
-        o_positions = o_positions[o_positions[:,0]!=0]
-        positions = (positions - self.position + 8).astype(int)
-        o_positions = (o_positions - self.position + 8).astype(int)
+        board_data_array = np.array(list(board_data.values()))
+        s_positions_board = np.sum(board_data_array[:, 0, 1:, 1:],axis=0)
+        g_positions_board = np.sum(board_data_array[:, 1, 1:, 1:],axis=0)
 
         if not self.owner:
-            positions, o_positions = o_positions, positions
+            move = move[::-1]
+            s_positions_board, g_positions_board = g_positions_board, s_positions_board
 
         a = np.zeros((17,17), dtype=bool)
 
+
+
         b0 = np.array([True,True,True,True],dtype=bool)
-        positions = [tuple(p) for p in positions]
-        o_positions = [tuple(p) for p in o_positions]
+        s_positions = [tuple(p) for p in np.array(np.where(s_positions_board)).T]
+        g_positions = [tuple(p) for p in np.array(np.where(g_positions_board)).T]
         # print(positions)
         for i in range(1,9):
             x0 = (i+8,8)
@@ -128,24 +143,22 @@ class HISHA(Piece):
             x2 = (8,i+8)
             x3 = (8,-i+8)
 
-            a[x0] = b0[0] * (x0 not in positions)
-            a[x1] = b0[1] * (x1 not in positions)
-            a[x2] = b0[2] * (x2 not in positions)
-            a[x3] = b0[3] * (x3 not in positions)
-            b0[0] = b0[0] * (x0 not in o_positions) * a[x0]
-            b0[1] = b0[1] * (x1 not in o_positions) * a[x1]
-            b0[2] = b0[2] * (x2 not in o_positions) * a[x2]
-            b0[3] = b0[3] * (x3 not in o_positions) * a[x3]
+            a[x0] = b0[0] * (x0 not in s_positions)
+            a[x1] = b0[1] * (x1 not in s_positions)
+            a[x2] = b0[2] * (x2 not in s_positions)
+            a[x3] = b0[3] * (x3 not in s_positions)
+            b0[0] = b0[0] * (x0 not in g_positions) * a[x0]
+            b0[1] = b0[1] * (x1 not in g_positions) * a[x1]
+            b0[2] = b0[2] * (x2 not in g_positions) * a[x2]
+            b0[3] = b0[3] * (x3 not in g_positions) * a[x3]
         # print(a)
         # print(b0)
 
         if self.name == "RY":
-            positions_board = np.zeros([17,17],dtype=bool)
-            # o_positions_board = np.zeros([17,17],dtype=bool)
-            positions_board[positions[0],positions[1]] = True
+
             # o_positions_board[o_positions[0],o_positions[1]] = True
 
-            a = a + move[1] * positions_board
+            a = a + move[1] * s_positions_board
 
 
         self.legal_move = a[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
@@ -158,34 +171,38 @@ class KAKU(Piece):
         super().__init__(init_position, owner, name=name)
         self.promote_name = "UM"
 
-    def _set_legal_move_board(self,positions,o_positions):
+    def _set_legal_move_board(self,board_data):
         move = self.move_dict[self.name].copy()
-        positions = positions[positions[:,0]!=0]
-        o_positions = o_positions[o_positions[:,0]!=0]
-        positions = (positions - self.position + 8).astype(int)
-        o_positions = (o_positions - self.position + 8).astype(int)
+        board_data_array = np.array(list(board_data.values()))
+        s_positions_board = np.sum(board_data_array[:, 0, 1:, 1:],axis=0)
+        g_positions_board = np.sum(board_data_array[:, 1, 1:, 1:],axis=0)
 
         if not self.owner:
-            positions, o_positions = o_positions, positions
-        a = np.zeros([17,17],dtype=bool)
-        positions = [tuple(p) for p in positions]
-        o_positions = [tuple(p) for p in o_positions]
+            move = move[::-1]
+            s_positions_board, g_positions_board = g_positions_board, s_positions_board
+
+        a = np.zeros((17,17), dtype=bool)
+
+
 
         b0 = np.array([True,True,True,True],dtype=bool)
+        s_positions = [tuple(p) for p in np.array(np.where(s_positions_board)).T]
+        g_positions = [tuple(p) for p in np.array(np.where(g_positions_board)).T]
+
 
         for i in range(1,9):
             x0 = (i+8,i+8)
             x1 = (-i+8,i+8)
             x2 = (i+8,-i+8)
             x3 = (-i+8,-i+8)
-            a[x0] = b0[0] * (x0 not in positions)
-            a[x1] = b0[1] * (x1 not in positions)
-            a[x2] = b0[2] * (x2 not in positions)
-            a[x3] = b0[3] * (x3 not in positions)
-            b0[0] = b0[0] * (x0 not in o_positions) * a[x0]
-            b0[1] = b0[1] * (x1 not in o_positions) * a[x1]
-            b0[2] = b0[2] * (x2 not in o_positions) * a[x2]
-            b0[3] = b0[3] * (x3 not in o_positions) * a[x3]
+            a[x0] = b0[0] * (x0 not in s_positions)
+            a[x1] = b0[1] * (x1 not in s_positions)
+            a[x2] = b0[2] * (x2 not in s_positions)
+            a[x3] = b0[3] * (x3 not in s_positions)
+            b0[0] = b0[0] * (x0 not in g_positions) * a[x0]
+            b0[1] = b0[1] * (x1 not in g_positions) * a[x1]
+            b0[2] = b0[2] * (x2 not in g_positions) * a[x2]
+            b0[3] = b0[3] * (x3 not in g_positions) * a[x3]
 
 
         if self.name == "UM":
@@ -203,9 +220,15 @@ class FU(Piece):
         self.promote_name = "TO"
         self.move_forward = 1
 
-    def _set_legal_move_komadai(self,positions,o_positions):
-        positions = positions.T.astype(int) -1
-        o_positions = o_positions.T.astype(int)-1
+    def _set_legal_move_komadai(self,board_data):
+        fu_positions_board = board_data["FU"][1-self.owner][1:,1:]
+        board_data_array = np.array(list(board_data.values()))
+        s_positions_board = np.sum(board_data_array[:, 0, 1:, 1:],axis=0)
+        g_positions_board = np.sum(board_data_array[:, 1, 1:, 1:],axis=0)
+
+        for i in range(len(fu_positions_board)):
+            if 1 in fu_positions_board[i]: fu_positions_board[i]=np.zeros_like(fu_positions_board[i])
+
 
 
 
@@ -218,8 +241,7 @@ class FU(Piece):
         else:
             self.legal_move[:,:-self.move_forward] = 0
 
-        self.legal_move[positions] = False
-        self.legal_move[o_positions] = False
+        self.legal_move *= s_positions_board * g_positions_board * fu_positions_board
 
 
 class KYO(Piece):
@@ -230,22 +252,23 @@ class KYO(Piece):
         self.move_forward = 1
 
 
-    def _set_legal_move_board(self,positions,o_positions):
-        move = self.move_dict[self.name]
-        a = np.zeros([17,17],dtype=bool)
-        positions = positions[positions[:,0]!=0]
-        o_positions = o_positions[o_positions[:,0]!=0]
-        positions = (positions - self.position + 8).T.astype(int)
-        o_positions = (o_positions - self.position + 8).T.astype(int)
+    def _set_legal_move_board(self,board_data):
+        move = self.move_dict[self.name].copy()
+        board_data_array = np.array(list(board_data.values()))
+        s_positions_board = np.sum(board_data_array[:, 0, 1:, 1:],axis=0)
+        g_positions_board = np.sum(board_data_array[:, 1, 1:, 1:],axis=0)
 
         if not self.owner:
-            # print(self.position)
             move = move[::-1]
-            positions, o_positions = o_positions, positions
-        positions = [tuple(p) for p in positions]
-        o_positions = [tuple(p) for p in o_positions]
+            s_positions_board, g_positions_board = g_positions_board, s_positions_board
 
-        b0 = np.array([True],dtype=bool)
+        a = np.zeros((17,17), dtype=bool)
+
+
+
+        b0 = np.array([True,True,True,True],dtype=bool)
+        s_positions = [tuple(p) for p in np.array(np.where(s_positions_board)).T]
+        g_positions = [tuple(p) for p in np.array(np.where(g_positions_board)).T]
         if self.name=="KY":
             if self.owner:
                 start,stop = 1, 9
@@ -253,18 +276,17 @@ class KYO(Piece):
                 start,stop = -1, -9
             for i in range(start,stop):
                 x0 = (8,i+8)
-                a[x0] = b0[0] * (x0 not in positions)
-                b0[0] = b0[0] * (x0 not in o_positions)
+                a[x0] = b0[0] * (x0 not in s_positions)
+                b0[0] = b0[0] * (x0 not in g_positions)
                 # print(b0[0])
                 # print(a[x0[0],0])
                 b0[0] *= a[x0]
 
             # a = np.sum(a, axis=0)
         else:
-            positions_board = np.zeros([17,17],dtype=bool)
-            positions_board[positions[0],positions[1]] = True
 
-            a = move * positions_board
+
+            a = move * s_positions_board
 
 
         self.legal_move = a[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
@@ -533,82 +555,119 @@ class Board:
                 # print(l)
                 return None
 
+    # def read_file_with_bad(self, filename, ):
+    #     # data = pf.read_csv(filename, comment="'", header=hoge)
+    #     with open(filename) as f:
+    #         data = f.read().split('\n')
+    #
+    #     l0 = None
+    #     out = []
+    #     good = []
+    #     print(filename)
+    #     for l in data:
+    #         if len(l)==0:
+    #             continue
+    #
+    #         elif l[:2]=="N+":
+    #             self.players[0] = l[2:]
+    #         elif l[:2]=="N-":
+    #             self.players[1] = l[2:]
+    #
+    #         # if (len(l)==7) and ((l[0]=="+") or (l[0]=="-")):
+    #
+    #         elif (len(l)>6) and ((l[0]=="+") or (l[0]=="-")):
+    #             # print(l)
+    #
+    #             start = [int(l[1]),int(l[2])]
+    #             goal = [int(l[3]),int(l[4])]
+    #             name = l[5:7]
+    #             self.board_data()
+    #             moves = self.get_legal_moves()
+    #             a = [np.array(list(self.move_data_tmp([int(m[0]),int(m[1])],goal = [int(m[2]),int(m[3])],name=l[4:6]).values())) for m in moves]
+    #             a = np.array(a)
+    #             aa = np.zeros([len(a),2,14,2,10,10])
+    #
+    #             # answer = self.out_data.copy()
+    #             aa[:,0] = np.array(list(self.out_data.copy().values()))
+    #             aa[:,1] = a
+    #             good.append((np.array(moves) == l[1:7]))
+    #             self.move(start, goal, name)
+    #
+    #             self.turn = 1- self.turn
+    #
+    #
+    #         elif l == "%TORYO":
+    #             if len(aa)==0:
+    #                 print("0 turn")
+    #                 return None
+    #             print(good)
+    #             out = np.concatenate(aa,axis=0)
+    #             good = np.concatenate(good,axis=0)
+    #
+    #
+    #             # out[:,-2+result] = 1
+    #             # out[:,-4] = "human" in self.players[0]
+    #             # out[:,-3] = "human" in self.players[1]
+    #
+    #             print('OK')
+    #
+    #             return out,good
+    #
+    #         elif "%" in l:
+    #             print('bad')
+    #             return None
+    #
+    #
+    #
     def read_file_with_bad(self, filename, ):
         # data = pf.read_csv(filename, comment="'", header=hoge)
-        with open(filename) as f:
-            data = f.read().split('\n')
 
-        l0 = None
-        out = []
-        good = []
-        print(filename)
-        for l in data:
-            if len(l)==0:
-                continue
+        players, move_data = files.read_csa_file(filename)
 
-            elif l[:2]=="N+":
-                self.players[0] = l[2:]
-            elif l[:2]=="N-":
-                self.players[1] = l[2:]
+        self.players = players
 
-            # if (len(l)==7) and ((l[0]=="+") or (l[0]=="-")):
+        for mv in move_data:
+            start = [int(mv[0]),int(mv[1])]
+            goal = [int(mv[2]),int(mv[3])]
+            name = l[4:6]
+            self.board_data()
+            moves = self.get_legal_moves()
+            a = [list(self.move_data_tmp([int(m[0]),int(m[1])],goal = [int(m[2]),int(m[3])],name=l[4:6]).values()) for m in moves]
+            a = np.array(a)
+            aa = np.zeros([len(a),2,14,2,10,10])
 
-            elif (len(l)>6) and ((l[0]=="+") or (l[0]=="-")):
-                # print(l)
+            # answer = self.out_data.copy()
+            aa[:,0] = np.array(list(self.out_data.copy().values()))
+            aa[:,1] = a
+            good.append((np.array(moves) == l[1:7]))
+            self.move(start, goal, name)
 
-                start = [int(l[1]),int(l[2])]
-                goal = [int(l[3]),int(l[4])]
-                name = l[5:7]
-                self.board_data()
-                moves = self.get_legal_moves()
-                a = [np.array(list(self.move_data_tmp([int(m[0]),int(m[1])],goal = [int(m[2]),int(m[3])],name=l[4:6]).values())) for m in moves]
-                a = np.array(a)
-                aa = np.zeros([len(a),2,14,2,10,10])
+            self.turn = 1- self.turn
 
-                # answer = self.out_data.copy()
-                aa[:,0] = np.array(list(self.out_data.copy().values()))
-                aa[:,1] = a
-                good.append((np.array(moves) == l[1:7]))
-                self.move(start, goal, name)
+            out = np.concatenate(aa,axis=0)
+            good = np.concatenate(good,axis=0)
 
-                self.turn = 1- self.turn
+            return out, good
 
 
-            elif l == "%TORYO":
-                if len(aa)==0:
-                    print("0 turn")
-                    return None
-                print(good)
-                out = np.concatenate(aa,axis=0)
-                good = np.concatenate(good,axis=0)
 
-
-                # out[:,-2+result] = 1
-                # out[:,-4] = "human" in self.players[0]
-                # out[:,-3] = "human" in self.players[1]
-
-                print('OK')
-
-                return out,good
-
-            elif "%" in l:
-                print('bad')
-                return None
 
     def get_legal_moves(self):
         moves = []
         self.get_array()
-        positions = self.array_position[self.array_owner]
-        o_positions = self.array_position[~self.array_owner]
+        self.board_data()
+        s_positions = self.array_position[self.array_owner]
+        g_positions = self.array_position[~self.array_owner]
         for p in self.pieces:
-            p.set_legal_move(positions, o_positions)
-            move_int = list(zip(*np.where(p.legal_move)))
-            for mi in move_int:
-                if (p.owner * (2*mi[0] - 10) + 10 - mi[0] <= p.move_forward):
-                    moves.append(str(p.position[0])+str(p.position[1])+str(mi[0]+1)+str(mi[1]+1)+p.name)
-                if (p.name in self.raw_names) and (p.position[0] != 0) :
-                    if (p.owner * (2*mi[0] - 10) + 10 - mi[0] <= 3) or (p.owner * (2*p.position[0] - 10) + 10 - p.position[0] <= 3):
-                        moves.append(str(p.position[0])+str(p.position[1])+str(mi[0]+1)+str(mi[1]+1)+p.promote_name)
+            p.set_legal_move()
+            if p.owner == self.turn:
+                move_int = list(zip(*np.where(p.legal_move)))
+                for mi in move_int:
+                    if (p.owner * (2*mi[0] - 10) + 10 - mi[0] <= p.move_forward):
+                        moves.append(str(p.position[0])+str(p.position[1])+str(mi[0]+1)+str(mi[1]+1)+p.name)
+                    if (p.name in self.raw_names) and (p.position[0] != 0) :
+                        if (p.owner * (2*mi[0] - 10) + 10 - mi[0] <= 3) or (p.owner * (2*p.position[0] - 10) + 10 - p.position[0] <= 3):
+                            moves.append(str(p.position[0])+str(p.position[1])+str(mi[0]+1)+str(mi[1]+1)+p.promote_name)
         return moves
 
 
