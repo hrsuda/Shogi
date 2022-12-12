@@ -24,11 +24,12 @@ def main():
         # print(fname)
         # out,good = B.read_file(input_dir+"/"+fname)
         _ = B.read_file_with_bad(input_dir+"/"+fname)
-        if _ is None:continu
+        if _ is None:continue
         out, good = _
+        # print(out.shape)
         out = out
         out2 = out.copy()
-        out_g = out[good]
+        # out_g = out[good]
         # out99 = out2[:,::-1,9:0:-1,9:0:-1]
         # out2 = out2[:,:,::-1,:,:]
         out[1::2,:,:,1:,1:] = out[1::2,:,::-1,9:0:-1,9:0:-1]
@@ -54,8 +55,10 @@ def main():
 
         if i==1000:
             break
-    output = np.concatenate(output, axis=0)
-    output2 = np.concatenate(output2, axis=0)
+
+    # output = np.concatenate(output, axis=0)
+    # output2 = np.concatenate(output2, axis=0)
+    # print(np.array(output).shape)
     np.save(out_filename, output)
     np.save(out_filename+'_t', output2)
 
