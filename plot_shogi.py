@@ -15,9 +15,10 @@ def plot_board(pieces):
     ax.vlines(x, y.min(), y.max())
     komadai_count =[0,0]
     for p in pieces:
-        print(p.name)
-        position = p.position
-        if position == (0,0):
+        # print(p.name)
+        position = np.array(p.position)
+        # print(position)
+        if position[0] == 0:
             xx = 13 * (1-p.owner) - 1
             yy = 1 + 0.5 * komadai_count[1-p.owner]
             ax.text(xx, yy, p.name)

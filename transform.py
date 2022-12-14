@@ -18,6 +18,7 @@ def main():
 
     out_0 = None
     for i,fname in enumerate(file_names):
+
         with open("init_posision.pkl", "rb") as f:
             pieces = pickle.load(f)
         B = Board(pieces)
@@ -27,8 +28,7 @@ def main():
         if _ is None:continue
         out, good = _
         # print(out.shape)
-        out = out
-        out2 = out.copy()
+        # out2 = out.copy()
         # out_g = out[good]
         # out99 = out2[:,::-1,9:0:-1,9:0:-1]
         # out2 = out2[:,:,::-1,:,:]
@@ -52,15 +52,22 @@ def main():
             output.append(out)
             output2.append(good)
 
+        if (i % 50 == 0) & (i>0):
+            print(i)
+            output = np.concatenate(output, axis=0)
+            output2 = np.concatenate(output2, axis=0)
+            # print(np.array(output).shape)
+            np.save(out_filename + str(i), output)
+            np.save(out_filename + str(i) +'_t', output2)
 
-        if i==1000:
-            break
+            output = []
+            output2 = []
+    output = np.concatenate(output, axis=0)
+    output2 = np.concatenate(output2, axis=0)
 
-    # output = np.concatenate(output, axis=0)
-    # output2 = np.concatenate(output2, axis=0)
-    # print(np.array(output).shape)
-    np.save(out_filename, output)
-    np.save(out_filename+'_t', output2)
+    np.save(out_filename + str(i), output)
+    np.save(out_filename + str(i) +'_t', output2)
+
 
 
 # def main():

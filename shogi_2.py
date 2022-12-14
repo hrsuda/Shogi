@@ -40,10 +40,10 @@ class Piece:
     def _set_legal_move_board(self,board_data):
 
         board_data_array = np.array(list(board_data.values()))
-        print(board_data_array)
+
         s_positions_board = np.sum(board_data_array[:, 0, 1:, 1:],axis=0)
         g_positions_board = np.sum(board_data_array[:, 1, 1:, 1:],axis=0)
-        print(s_positions_board)
+        # print(g_positions_board)
 
 
         move = self.move_dict[self.name].copy()
@@ -58,7 +58,8 @@ class Piece:
 
         # print(move)
         self.legal_move[...] = move[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
-        self.legal_move[...] *= s_positions_board.astype(int)
+        # print(self.legal_move)
+        self.legal_move[...] *= 1-s_positions_board.astype(int)
 
 
     def _set_legal_move_komadai(self,board_data):
@@ -74,7 +75,7 @@ class Piece:
         else:
             self.legal_move[:,:-self.move_forward] = 0
 
-        self.legal_move[...] *= (s_positions_board * g_positions_board).astype(int)
+        self.legal_move[...] *= ((1-s_positions_board) * (1-g_positions_board)).astype(int)
 
 
 
@@ -136,8 +137,8 @@ class HISHA(Piece):
 
 
         b0 = np.array([True,True,True,True],dtype=int)
-        s_positions = [tuple(p) for p in np.array(np.where(s_positions_board),dtype=int).T]
-        g_positions = [tuple(p) for p in np.array(np.where(g_positions_board),dtype=int).T]
+        s_positions = [tuple(p) for p in np.array(np.where(s_positions_board)).T+1]
+        g_positions = [tuple(p) for p in np.array(np.where(g_positions_board)).T+1]
         # print(positions)
         for i in range(1,9):
             x0 = (i+8,8)
@@ -164,7 +165,7 @@ class HISHA(Piece):
 
 
         self.legal_move[...] = a[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
-        self.legal_move *= s_positions_board.astype(int)
+        self.legal_move *= 1-s_positions_board.astype(int)
 
 
 class KAKU(Piece):
@@ -188,8 +189,8 @@ class KAKU(Piece):
 
 
         b0 = np.array([True,True,True,True],dtype=int)
-        s_positions = [tuple(p) for p in np.array(np.where(s_positions_board),dtype=int).T]
-        g_positions = [tuple(p) for p in np.array(np.where(g_positions_board),dtype=int).T]
+        s_positions = [tuple(p) for p in np.array(np.where(s_positions_board)).T+1]
+        g_positions = [tuple(p) for p in np.array(np.where(g_positions_board)).T+1]
 
 
         for i in range(1,9):
@@ -213,7 +214,7 @@ class KAKU(Piece):
 
             a = a + move[1]
         self.legal_move[...] = a[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
-        self.legal_move *= s_positions_board
+        self.legal_move *= 1-s_positions_board
 
 class FU(Piece):
 
@@ -243,7 +244,7 @@ class FU(Piece):
         else:
             self.legal_move[:,:-self.move_forward] = 0
 
-        self.legal_move *= (s_positions_board * g_positions_board * fu_positions_board).astype(int)
+        self.legal_move *= ((1-s_positions_board) * (1-g_positions_board) * fu_positions_board).astype(int)
 
 
 class KYO(Piece):
@@ -269,8 +270,8 @@ class KYO(Piece):
 
 
         b0 = np.array([True,True,True,True],dtype=int)
-        s_positions = [tuple(p) for p in np.array(np.where(s_positions_board)).T]
-        g_positions = [tuple(p) for p in np.array(np.where(g_positions_board)).T]
+        s_positions = [tuple(p) for p in np.array(np.where(s_positions_board)).T+1]
+        g_positions = [tuple(p) for p in np.array(np.where(g_positions_board)).T+1]
         if self.name=="KY":
             if self.owner:
                 start,stop = 1, 9
@@ -288,11 +289,11 @@ class KYO(Piece):
         else:
 
 
-            a = move * s_positions_board
+            a = move
 
 
         self.legal_move[...] = a[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
-
+        self.legal_move *= (1-s_positions_board).astype(int)
 class KEIMA(Piece):
 
     def __init__(self, init_position, owner, name="KE"):
@@ -334,12 +335,21 @@ class Board:
         self.players = players
         self.raw_names = ["OU", "HI", "KA", "KI", "GI", "KE", "KY", "FU"]
         self.promote_names = ["RY", "UM", "NG", "NK", "NY", "TO"]
-        self.promote_names_dict = list(zip(["RY", "UM", "NG", "NK", "NY", "TO"],["HI","KA","GI","KE","KY","FU"]))
+        self.promote_names_dict = dict(zip(["RY", "UM", "NG", "NK", "NY", "TO"],["HI","KA","GI","KE","KY","FU"]))
+        # self.raw_names_dict = dict(zip(["HI","KA","GI","KE","KY","FU"], ["RY", "UM", "NG", "NK", "NY", "TO"]))
         self.names_dict = dict(zip(
         ["OU", "HI", "RY", "KA", "UM", "KI", "GI", "NG", "KE", "NK", "KY", "NY", "FU", "TO"],
         ["OU", "HI", "HI", "KA", "KA", "KI", "GI", "GI", "KE", "KE", "KY", "KY", "FU", "FU"]
         ))
-        self.names = self.raw_names + self.promote_names
+        self.names_dict2 = dict(zip(
+        ["OU", "HI", "RY", "KA", "UM", "KI", "GI", "NG", "KE", "NK", "KY", "NY", "FU", "TO"],
+        ["OU", "RY", "RY", "UM", "UM", "KI", "NG", "NG", "NK", "NK", "NY", "NY", "TO", "TO"]
+        ))
+        self.promote_dict = dict(zip(
+        ["OU", "HI", "RY", "KA", "UM", "KI", "GI", "NG", "KE", "NK", "KY", "NY", "FU", "TO"],
+        [False,True,False,True,False,False,True,False,True,False,True,False,True,False]
+        ))
+        self.names = ["OU", "HI", "RY", "KA", "UM", "KI", "GI", "NG", "KE", "NK", "KY", "NY", "FU", "TO"]
         # self.raw_names_dict = {v: k for k, v in self.promote_names_dict.items()}
 
         # self.positions_board = np.zeros(self.board_shape)
@@ -444,28 +454,24 @@ class Board:
     def board_from_data(self, data):
         self.clear()
         self.get_array()
-        for n in self.promote_names:
-            d = data[n]
-            a = np.array(list(np.where(d))).T
-            nn = self.promote_names_dict[n]
-            name_mask = self.names == nn
-            target_p = self.pieces[name_mask]
-            for i,x in enumerate(a):
-                p = target_p[i]
-                p.name = n
-                p.owner = 1 - a[i, 0]
-                p.position = tuple(a[i, 1:])
+        data_v = np.array(list(data.values()))
+        data_k = np.array(list(data.keys()))
 
         for n in self.raw_names:
-            d = data[n]
-            a = np.array(list(np.where(d))).T
-            name_mask = self.names == n
-            target_p = self.pieces[name_mask]
-            for i,x in enumerate(a):
-                p = target_p[i]
-                p.name = n
-                p.owner = 1 - a[i, 0]
-                p.position = tuple(a[i, 1:])
+            p_mask = self.array_rawname == n
+            piece = self.pieces[p_mask]
+            d = data_v[(data_k==n)|(data_k==self.names_dict2[n])]
+
+            ind = np.array(np.where(d==1))
+            for i in range(len(ind[0])):
+                p = piece[i]
+                if ind[0,i]==1:
+                    p.name=p.promote_name
+                p.position = tuple(ind[2:,i])
+                p.owner = 1 - ind[0,i]
+
+
+
 
 
 
@@ -483,10 +489,10 @@ class Board:
                 # print(d)
 
                 if d[1-self.turn][tuple(start)]:
-                    d[1-self.turn][tuple(start)] = 0
+                    d[1-self.turn][tuple(start)] -= 1
                     d[1-self.turn][tuple(goal)] = 1
 
-                if d[self.turn][tuple(goal)]:
+                if d[self.turn][tuple(goal)]==1:
                     d[self.turn][tuple(goal)] = 0
 
                     data[self.names_dict[n]][1-self.turn][0,0] += 1
@@ -505,11 +511,13 @@ class Board:
     def board_data(self):
         names = ["OU", "HI", "RY", "KA", "UM", "KI", "GI", "NG", "KE", "NK", "KY", "NY", "FU", "TO"]
 
-        data = np.zeros([14,2,10,10])
+        data = np.zeros([14,2,10,10],dtype=int)
         self.out_data = dict(zip(names, data))
+        # print(self.out_data)
 
         for p in self.pieces:
-            self.out_data[p.name][int(p.owner)][p.position] += 1
+            # print(p.name)
+            self.out_data[p.name][int(1-p.owner)][p.position] += 1
 
 
 
@@ -624,38 +632,48 @@ class Board:
     def read_file_with_bad(self, filename, ):
         # data = pf.read_csv(filename, comment="'", header=hoge)
 
-        players, move_data = files.read_csa_file(filename)
+        _ = files.read_csa_file(filename)
+        if _ is None:return None
+        players, move_data = _
+        if len(move_data) < 20:
+            print("pass")
+            return None
         # print(move_data)
         self.players = players
 
         good = []
-
+        out = []
         for mv in move_data:
             # print(mv)
             start = [int(mv[0]),int(mv[1])]
             goal = [int(mv[2]),int(mv[3])]
             name = mv[4:6]
-            self.board_data()
+            # self.board_data()
             moves = self.get_legal_moves()
+            # print(moves)
             a = [list(self.move_data_tmp([int(m[0]),int(m[1])],goal = [int(m[2]),int(m[3])],name=m[4:6]).values()) for m in moves]
             a = np.array(a)
-
+            # print(a.shape)
 
             aa = np.zeros([len(a),2,14,2,10,10])
 
+
+
             # answer = self.out_data.copy()
-            aa[:,0,...] = np.array(list(self.out_data.copy().values()))
+            aa[:,0,...] = np.array(list(self.out_data.values()))
             aa[:,1,...] = a
-            print(aa.shape)
+            # print(aa.shape)
             good.append((np.array(moves) == mv[1:7]))
+            out.append(aa)
             self.move(start, goal, name)
 
             self.turn = 1- self.turn
 
-        out = np.concatenate(aa,axis=0)
+        out = np.concatenate(out,axis=0)
         good = np.concatenate(good,axis=0)
-
-        return aa, good
+        print(filename)
+        # print(out.shape)
+        return out, good
 
 
 
@@ -665,19 +683,20 @@ class Board:
         self.get_array()
         self.board_data()
         # print(self.out_data)
-        for p in self.pieces[:2]:
+        for p in self.pieces:
             if p.owner == self.turn:
-                print(p.name)
+                # print(p.name)
                 p.set_legal_move(self.out_data)
-                move_int = list(zip(*np.where(p.legal_move)))
-                print(move_int)
+                move_int = np.array(list(np.where(p.legal_move))).T + 1
+                # print(move_int)
 
                 for mi in move_int:
-                    if (p.owner * (2*mi[0] - 10) + 10 - mi[0] <= p.move_forward):
-                        moves.append(str(p.position[0])+str(p.position[1])+str(mi[0]+1)+str(mi[1]+1)+p.name)
+
+                    if ((((2*p.owner*(mi[1]-6)+9- mi[1])<=0) or (2*p.owner*(p.position[1]-6)+9- p.position[1])) <=0) and (self.promote_dict[p.name]) and (mi[0]!=0):
+                        moves.append(str(p.position[0])+str(p.position[1])+str(mi[0])+str(mi[1])+p.promote_name)
                     if (p.name in self.raw_names) and (p.position[0] != 0) :
-                        if (p.owner * (2*mi[0] - 10) + 10 - mi[0] <= 3) or (p.owner * (2*p.position[0] - 10) + 10 - p.position[0] <= 3):
-                            moves.append(str(p.position[0])+str(p.position[1])+str(mi[0]+1)+str(mi[1]+1)+p.promote_name)
+                        if ((1-p.owner)*(9-mi[1]-p.move_forward) + p.owner*(mi[1]-p.move_forward))>=0:
+                            moves.append(str(p.position[0])+str(p.position[1])+str(mi[0])+str(mi[1])+p.name)
 
         return moves
 
