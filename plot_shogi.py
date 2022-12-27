@@ -2,7 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 import init_position
+import matplotlib.patches as patches
 
+piece_text = ['王', '飛', '竜', '角', '馬', '金', '銀', '成銀', '桂', '成桂', '香', '成香', '歩', 'と']
 
 def plot_board(pieces):
     x = np.arange(0,10) + 0.5
@@ -28,7 +30,101 @@ def plot_board(pieces):
             yy = y[position[1]-1] + 0.5
             ax.text(xx, yy, p.name, rotation=180*(1-p.owner))
 
+    ax.set_aspect(1)
+    return ax
+
+
+def plot_board_from_data(data):
+    x = np.arange(0,10) + 0.5
+    y = np.arange(0,10) + 0.5
+    ax = plt.subplot(111)
+    ax.invert_xaxis()
+    ax.invert_yaxis()
+
+    ax.hlines(y,x.min(),x.max())
+    ax.vlines(x, y.min(), y.max())
+    data_k = list(data.keys())
+    data_v = list(data.values())
+    ind = np.array(np.where(data_v)).T
+
+    komadai_count =[0,0]
+
+    for i in ind:
+        # print(i)
+        owner = i[1]
+        name = data_k[i[0]]
+        # print(p.name)
+        position = i[2:4]
+        # print(position)
+        if position[0] == 0:
+            xx = 13 * (1-owner) - 1
+            yy = 1 + 0.5 * komadai_count[1-owner]
+            ax.text(xx, yy, name)
+            komadai_count[1-owner] += 1
+        else:
+            xx = x[position[0]-1] + 0.8
+            yy = y[position[1]-1] + 0.5
+            ax.text(xx, yy, name, rotation=180*(owner))
+
         ax.set_aspect(1)
+    return ax
+
+
+def plot_move(data1,data2):
+    names = np.array(["OU", "HI", "RY", "KA", "UM", "KI", "GI", "NG", "KE", "NK", "KY", "NY", "FU", "TO"])
+    names = np.array(piece_text)
+    x = np.arange(0,10) + 0.5
+    y = np.arange(0,10) + 0.5
+    ax = plt.subplot(111)
+    ax.invert_xaxis()
+    ax.invert_yaxis()
+
+    ax.hlines(y,x.min(),x.max())
+    ax.vlines(x, y.min(), y.max())
+    data_diff = data2 - data1
+
+    ind = np.array(np.where(data1)).T
+    ind_diff = np.array(np.where(data_diff)).T
+    komadai_count =[0,0]
+
+    for i in ind:
+        # print(i)
+        owner = i[1]
+        name = names[i[0]]
+        # print(p.name)
+        position = i[2:4]
+        # print(position)
+        if position[0] == 0:
+            num = data1[tuple(i)]
+
+            for n in range(int(num)):
+                xx = 13 * (owner) - 1
+                yy = 1 + 0.5 * komadai_count[owner]
+                ax.text(xx, yy, name,fontname="MS Gothic")
+                komadai_count[owner] += 1
+        else:
+            xx = x[position[0]-1] + 0.8
+            yy = y[position[1]-1] + 0.5
+            ax.text(xx, yy, name, rotation=180*(owner),fontname="MS Gothic")
+
+    for ii in ind_diff:
+        print(ii)
+
+        # if ii[1]==0:
+        if ii[-1]==0:
+            t = names[ii[0]]
+
+        else:
+            r = patches.Rectangle(xy=(ii[2]-0.5, ii[3]-0.5), width=1, height=1,alpha=0.3,fc='r')
+            # ax.text(ii[2]-0.2, ii[3], names[ii[0]], rotation=180*(ii[1]),fontname="MS Gothic",alpha=0.3)
+
+            ax.add_patch(r)
+
+
+    ax.set_aspect(1)
+    if len(ind_diff)>4:
+        raise ValueError
+
     return ax
 
 

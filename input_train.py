@@ -6,9 +6,11 @@ import init_position
 import sys
 import plot_shogi
 import matplotlib.pyplot as plt
+import random
 
 
 def main():
+    plt.ion()
 
     args = sys.argv
     data_file_name = args[1]
@@ -21,31 +23,46 @@ def main():
 
     data = np.load(data_file_name, allow_pickle=True)
 
+
     with open("init_posision.pkl", "rb") as f:
         pieces = pickle.load(f)
     B = Board(pieces)
 
 
-    for i in range(imax):
-        print(data.shape)
-        d = data[i,1]
-        print(np.where(d))
-        B.board_from_data(dict(zip(B.names,d)))
+    for i0 in range(imax):
 
-        ax = plot_shogi.plot_board(B.pieces)
-        plt.show()
+        print(i0)
+        i = random.randint(0,len(data))
+        # if good[i] != 1:continue
+        d = data[i,0]
+        d2 = data[i,1]
+        print(np.where(d))
+
+
+        # B.board_from_data(dict(zip(B.names,d)))
+
+        # ax = plot_shogi.plot_board(B.pieces)
+        # ax = plot_shogi.plot_board_from_data(dict(zip(B.names,d)))
+        ax = plot_shogi.plot_move(d,d2)
+        # plt.show()
+        plt.pause(0.1)
         moves = B.get_legal_moves()
-        a = np.array([list(B.move_data_tmp([int(m[0]),int(m[1])],goal = [int(m[2]),int(m[3])],name=m[4:6]).values()) for m in moves])
+        # print(B.pieces)
+        a = np.array([list(B.move_data_tmp([int(m[0]),int(m[1])],goal = [int(m[2]),int(m[3])],name=m[4:6])) for m in moves])
         move_text =''
-        while len(move_text)!=6:
-            move_text = input()
-        # move_text = ["9998KY"]
+        # while len(move_text)==0:
+        #     move_text = input()
+        move_text = input()
+        # move_text = "9998KY"
+        if move_text=="":
+            ax.clear()
+            continue
         start = [int(move_text[0]),int(move_text[1])]
         goal = [int(move_text[2]),int(move_text[3])]
         name = move_text[4:6]
 
-        a_t = a==move_text
-        B.move()
+        a_t = (a==move_text)
+        B.move(start,goal,name)
         B.board_data()
         aa = np.zeros([len(a),2,14,2,10,10])
         aa[:,0,...] = d
@@ -53,6 +70,7 @@ def main():
 
         out.append(aa)
         out_t.append(a_t)
+        ax.clear()
 
 
     out = np.concatenate(out,axis=0)

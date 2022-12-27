@@ -27,14 +27,16 @@ def main():
         _ = B.read_file_with_bad(input_dir+"/"+fname)
         if _ is None:continue
         out, good = _
+        print(np.where(good))
         # print(out.shape)
         # out2 = out.copy()
         # out_g = out[good]
         # out99 = out2[:,::-1,9:0:-1,9:0:-1]
         # out2 = out2[:,:,::-1,:,:]
-        out[1::2,:,:,1:,1:] = out[1::2,:,::-1,9:0:-1,9:0:-1]
-        # out[1::2,:,:,1:,1:] = out[0::2,:,::-1,9:0:-1,9:0:-1]
 
+        # print(out.shape)
+        # out[1::2,:,:,1:,1:] = out[0::2,:,::-1,9:0:-1,9:0:-1]
+        # raise ValueError
         # l = len(out)
         # ind1 = np.arange(0,l-1,2)
         # ind2 = np.arange(1,l-1,2)
@@ -52,6 +54,8 @@ def main():
             output.append(out)
             output2.append(good)
 
+
+
         if (i % 50 == 0) & (i>0):
             print(i)
             output = np.concatenate(output, axis=0)
@@ -62,6 +66,8 @@ def main():
 
             output = []
             output2 = []
+
+
     output = np.concatenate(output, axis=0)
     output2 = np.concatenate(output2, axis=0)
 

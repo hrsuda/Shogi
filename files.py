@@ -25,7 +25,7 @@ def read_csa_file(filename):
 
     move_data = []
 
-    with open(filename) as f:
+    with open(filename,encoding="utf-8") as f:
         data = f.read().split('\n')
     for l in data:
         if len(l)==0:
