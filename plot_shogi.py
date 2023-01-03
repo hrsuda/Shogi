@@ -3,6 +3,9 @@ import numpy as np
 import pickle
 import init_position
 import matplotlib.patches as patches
+from matplotlib import rcParams
+rcParams['font.family'] = 'sans-serif'
+rcParams['font.sans-serif'] = ['Hiragino Maru Gothic Pro', 'Yu Gothic', 'Meirio', 'Takao', 'IPAexGothic', 'IPAPGothic', 'VL PGothic', 'Noto Sans CJK JP']
 
 piece_text = ['王', '飛', '竜', '角', '馬', '金', '銀', '成銀', '桂', '成桂', '香', '成香', '歩', 'と']
 
@@ -100,12 +103,12 @@ def plot_move(data1,data2):
             for n in range(int(num)):
                 xx = 13 * (owner) - 1
                 yy = 1 + 0.5 * komadai_count[owner]
-                ax.text(xx, yy, name,fontname="MS Gothic")
+                ax.text(xx, yy, name)
                 komadai_count[owner] += 1
         else:
             xx = x[position[0]-1] + 0.8
             yy = y[position[1]-1] + 0.5
-            ax.text(xx, yy, name, rotation=180*(owner),fontname="MS Gothic")
+            ax.text(xx, yy, name, rotation=180*(owner),)
 
     for ii in ind_diff:
         print(ii)

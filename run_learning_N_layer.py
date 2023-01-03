@@ -10,7 +10,7 @@ def main():
     out_name = args[2]
 
     iters_num = 10000
-    batch_size = 100
+    batch_size = 64
     learning_rate = 1e-1
     test_len = 100
 
@@ -34,7 +34,7 @@ def main():
     # t_test = t_bool[test_mask]
     t_test = data2[test_mask]
     # print(data[0])
-    network = TwoLayerNet(input_size=2*14*2*10*10, hidden_size=150, output_size=1,weight_init_std=0.1)
+    network = NLayerNet(input_size=2*14*2*10*10, hidden_size_list=[200,150,100,50], output_size=1,weight_init_std=0.1)
     data_size = x_data.shape[0]
 
 
@@ -54,8 +54,10 @@ def main():
 
         grad = network.gradient(x_batch, t_batch)
 
-        for key in ("W1", "b1", "W2", "b2"):
-            network.params[key] -= learning_rate * grad[key]
+        for j,g in enumerate(grad):
+            network.W_params[j] -= learning_rate * g[0]
+            network.b_params[j] -= learning_rate * g[1]
+
 
 
         loss = network.loss(x_batch, t_batch)
@@ -69,14 +71,15 @@ def main():
 
             print(train_acc)
             print(loss)
+            # print(grad)
     print(train_acc_list)
-    print(network.params)
+    # print(network.params)
 
     plt.plot(np.arange(iters_num),train_loss_list)
 
     plt.yscale('log')
     plt.savefig("hoge.pdf")
-    np.save(out_name,network.params)
+    np.save(out_name,[network.W_params,network.b_params])
 
 if __name__ == "__main__":
     main()
