@@ -846,7 +846,7 @@ class Board:
                             moves.append(str(p.position[0])+str(p.position[1])+str(mi[0])+str(mi[1])+p.name)
 
 
-        return moves
+        return np.unique(moves)
 
 
 
