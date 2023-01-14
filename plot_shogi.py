@@ -8,6 +8,10 @@ rcParams['font.family'] = 'sans-serif'
 rcParams['font.sans-serif'] = ['Hiragino Maru Gothic Pro', 'Yu Gothic', 'Meirio', 'Takao', 'IPAexGothic', 'IPAPGothic', 'VL PGothic', 'Noto Sans CJK JP']
 
 piece_text = ['王', '飛', '竜', '角', '馬', '金', '銀', '成銀', '桂', '成桂', '香', '成香', '歩', 'と']
+names_dict = dict(zip(
+["OU", "HI", "RY", "KA", "UM", "KI", "GI", "NG", "KE", "NK", "KY", "NY", "FU", "TO"],
+['王', '飛', '竜', '角', '馬', '金', '銀', '成銀', '桂', '成桂', '香', '成香', '歩', 'と']
+))
 
 def plot_board(pieces):
     x = np.arange(0,10) + 0.5
@@ -26,18 +30,19 @@ def plot_board(pieces):
         if position[0] == 0:
             xx = 13 * (1-p.owner) - 1
             yy = 1 + 0.5 * komadai_count[1-p.owner]
-            ax.text(xx, yy, p.name)
+            ax.text(xx, yy, names_dict[p.name])
             komadai_count[1-p.owner] += 1
         else:
             xx = x[position[0]-1] + 0.8
             yy = y[position[1]-1] + 0.5
-            ax.text(xx, yy, p.name, rotation=180*(1-p.owner))
+            ax.text(xx, yy, names_dict[p.name], rotation=180*(1-p.owner))
 
     ax.set_aspect(1)
     return ax
 
 
 def plot_board_from_data(data):
+    names = np.array(piece_text)
     x = np.arange(0,10) + 0.5
     y = np.arange(0,10) + 0.5
     ax = plt.subplot(111)
@@ -46,35 +51,37 @@ def plot_board_from_data(data):
 
     ax.hlines(y,x.min(),x.max())
     ax.vlines(x, y.min(), y.max())
-    data_k = list(data.keys())
-    data_v = list(data.values())
-    ind = np.array(np.where(data_v)).T
+
+    ind = np.array(np.where(data)).T
 
     komadai_count =[0,0]
 
     for i in ind:
         # print(i)
         owner = i[1]
-        name = data_k[i[0]]
+        name = names[i[0]]
         # print(p.name)
         position = i[2:4]
         # print(position)
         if position[0] == 0:
-            xx = 13 * (1-owner) - 1
-            yy = 1 + 0.5 * komadai_count[1-owner]
-            ax.text(xx, yy, name)
-            komadai_count[1-owner] += 1
+            num = data1[tuple(i)]
+
+            for n in range(int(num)):
+                xx = 13 * (owner) - 1
+                yy = 1 + 0.5 * komadai_count[owner]
+                ax.text(xx, yy, name)
+                komadai_count[owner] += 1
         else:
             xx = x[position[0]-1] + 0.8
             yy = y[position[1]-1] + 0.5
-            ax.text(xx, yy, name, rotation=180*(owner))
+            ax.text(xx, yy, name, rotation=180*(owner),)
 
         ax.set_aspect(1)
     return ax
 
 
 def plot_move(data1,data2):
-    names = np.array(["OU", "HI", "RY", "KA", "UM", "KI", "GI", "NG", "KE", "NK", "KY", "NY", "FU", "TO"])
+    # names = np.array(["OU", "HI", "RY", "KA", "UM", "KI", "GI", "NG", "KE", "NK", "KY", "NY", "FU", "TO"])
     names = np.array(piece_text)
     x = np.arange(0,10) + 0.5
     y = np.arange(0,10) + 0.5

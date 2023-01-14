@@ -26,6 +26,7 @@ def sum_squared_error(y, t):
 
 
 def sigmoid(x):
+    # x = x - np.min(x, axis=-1, keepdims=True)
     out = 1. / (1. + np.exp(-x))
     return out
 
@@ -55,7 +56,7 @@ class Sigmoid(object):
         self.out = None
 
     def forward(self, x):
-
+        # x = x - np.max(x, axis=-1, keepdims=True)
         out = 1. / (1. + np.exp(-x))
         self.out = out
         return out
@@ -161,7 +162,7 @@ class SigmoidWithLoss(object):
 
         batch_size = self.t.shape[0]
         dx = (self.y - self.t) / batch_size
-        dx[self.t] *= 100
+        # dx[~self.t] *= 0.1
         if dx.shape == (64,64):raise ValueError
         # dx = dx.reshape(*self.original_x_shape)  # 入力データの形状に戻す（テンソル対応）
 
@@ -252,13 +253,15 @@ class NLayerNet(object):
             self.W_params.append(w)
             self.b_params.append(b)
             self.layers.append(Affine(w,b))
-            self.layers.append(Relu())
+            self.layers.append(Sigmoid())
 
         w = weight_init_std * np.random.randn(hidden_size_list[N-1], output_size)
         b = weight_init_std * np.random.randn(output_size)
         self.W_params.append(w)
         self.b_params.append(b)
         self.layers.append(Affine(w,b))
+
+
 
         self.lastLayer = SigmoidWithLoss()
 

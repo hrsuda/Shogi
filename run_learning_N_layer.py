@@ -2,6 +2,7 @@ import numpy as np
 import sys
 from learning import *
 import matplotlib.pyplot as plt
+import pickle
 
 
 def main():
@@ -9,9 +10,9 @@ def main():
     data_file_name = args[1]
     out_name = args[2]
 
-    iters_num = 10000
-    batch_size = 64
-    learning_rate = 1e-1
+    iters_num = 100000
+    batch_size = 128
+    learning_rate = 0.02
     test_len = 100
 
 
@@ -28,13 +29,20 @@ def main():
 
     x_data = data
     # t_data = t_bool
-    t_data = data2
+    t_data = data2.astype(bool)
+    x_data_good = data[t_data]
+    t_data_good = data2[t_data]
+    x_data_bad = data[~t_data]
+    t_data_bad = data2[~t_data]
+
+
+
 
     x_test = data[test_mask]
     # t_test = t_bool[test_mask]
     t_test = data2[test_mask]
     # print(data[0])
-    network = NLayerNet(input_size=2*14*2*10*10, hidden_size_list=[200,150,100,50], output_size=1,weight_init_std=0.1)
+    network = NLayerNet(input_size=2*14*2*10*10, hidden_size_list=[200,150,100,50], output_size=1,weight_init_std=0.3)
     data_size = x_data.shape[0]
 
 
@@ -43,14 +51,20 @@ def main():
 
     iter_per_epoch = max(data_size // batch_size, 1)
     print(iter_per_epoch)
+    alpha = 1.0/4
 
 
     for i in range(iters_num):
 
-        batch_mask = np.random.choice(data_size, batch_size)
+        # batch_mask = np.random.choice(data_size, batch_size)
+        batch_mask_good = np.random.choice(len(x_data_good), int(batch_size*alpha))
+        batch_mask_bad = np.random.choice(len(x_data_bad), int(batch_size*(1-alpha)))
 
-        x_batch = x_data[batch_mask]
-        t_batch = t_data[batch_mask]
+        # x_batch = x_data[batch_mask]
+        # t_batch = t_data[batch_mask]
+        x_batch = np.concatenate([x_data_good[batch_mask_good], x_data_bad[batch_mask_bad]], axis=0)
+        t_batch = np.concatenate([t_data_good[batch_mask_good], t_data_bad[batch_mask_bad]], axis=0)
+
 
         grad = network.gradient(x_batch, t_batch)
 
@@ -61,6 +75,7 @@ def main():
 
 
         loss = network.loss(x_batch, t_batch)
+        # print(loss)
 
 
         train_loss_list.append(loss)
@@ -73,13 +88,17 @@ def main():
             print(loss)
             # print(grad)
     print(train_acc_list)
-    # print(network.params)
 
-    plt.plot(np.arange(iters_num),train_loss_list)
+    plt.plot(range(iters_num),train_loss_list)
 
     plt.yscale('log')
     plt.savefig("hoge.pdf")
-    np.save(out_name,[network.W_params,network.b_params])
+    # print(network.params)
+    # np.save(out_name+"_W",np.concatenate(network.W_params))
+    # np.save(out_name+"_b",np.concatenate(network.b_params))
+    with open(out_name, 'wb') as f:
+        pickle.dump(network, f)
+
 
 if __name__ == "__main__":
     main()

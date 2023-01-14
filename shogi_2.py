@@ -305,11 +305,10 @@ class KYO(Piece):
             # o_positions_board[o_positions[0],o_positions[1]] = True
 
             a = move
-            self.legal_move *= 1-s_positions_board.astype(np.int8)
 
 
-        else:
-            self.legal_move[...] = a[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
+        self.legal_move = a[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
+        self.legal_move *= 1-s_positions_board.astype(np.int8)
 
 class KEIMA(Piece):
 
@@ -742,7 +741,7 @@ class Board:
                 aa[:,:,:,:,1:,1:] = aa[:, :,:,:, 9:0:-1, 9:0:-1]
                 aa[:,:,:,:] = aa[:,:,:,::-1]
             # print(moves)
-            if len(np.where(np.array(moves) == mv[0:6])[0]) == 0:
+            if not (np.array(moves) == mv[0:6]).any():
                 raise ValueError
             good.append((np.array(moves) == mv[0:6]))
             out.append(aa)
@@ -757,6 +756,67 @@ class Board:
         return out, good
 
 
+    def read_file_player(self, filename, playername ):
+        # data = pf.read_csv(filename, comment="'", header=hoge)
+
+        _ = files.read_csa_file(filename)
+        if _ is None:return None
+        players, move_data  = _
+        if len(move_data) < 20:
+            print("pass")
+            return None
+        # print(move_data)
+        self.players = np.array(players)
+
+        p_ind = np.where(self.players == playername)[0][0]
+
+
+
+
+        good = []
+        out = []
+        for i,mv in enumerate(move_data):
+            # print(mv)
+            # self.board_data()
+            start = [int(mv[0]),int(mv[1])]
+            goal = [int(mv[2]),int(mv[3])]
+            name = mv[4:6]
+            # self.board_data()
+            if i % 2 == p_ind:
+                moves = self.get_legal_moves()
+                # print(moves)
+                a = [list(self.move_data_tmp(start=[int(m[0]),int(m[1])],goal = [int(m[2]),int(m[3])],name=m[4:6])) for m in moves]
+                a = np.array(a,dtype=np.int8)
+                # print(a.shape)
+
+                aa = np.zeros([len(a),2,14,2,10,10])
+
+
+
+                # answer = self.out_data.copy()
+                self.board_data()
+                # print(np.where(self.out_data==1))
+                aa[:,0,...] = self.out_data.copy()
+                aa[:,1,...] = a
+                # print(aa.shape)
+                if i % 2==1:
+                    aa[:,:,:,:,1:,1:] = aa[:, :,:,:, 9:0:-1, 9:0:-1]
+                    aa[:,:,:,:] = aa[:,:,:,::-1]
+                # print(moves)
+                if not (np.array(moves) == mv[0:6]).any():
+                    raise ValueError
+
+                good.append((np.array(moves) == mv[0:6]))
+                out.append(aa)
+            self.move(start, goal, name)
+
+            self.turn = 1- self.turn
+
+        out = np.concatenate(out,axis=0)
+        good = np.concatenate(good,axis=0)
+        print(filename)
+        # print(out.shape)
+        return out, good
 
 
     def get_legal_moves(self):
@@ -774,15 +834,15 @@ class Board:
                 for mi in move_int:
 
                     if p.owner == 1:
-                        if ((p.position[1] <= 3) | (mi[1] <= 3)) & (self.promote_dict[p.name]) & (p.position[0]!=0):
+                        if ((p.position[1] <= 3) | (mi[1] <= 3)) & (self.promote_dict[p.name]) & (p.position[0]!=0) :
                             moves.append(str(p.position[0])+str(p.position[1])+str(mi[0])+str(mi[1])+p.promote_name)
                             # print(p.name)
-                        if (mi[1] > p.move_forward):
+                        if (mi[1] > p.move_forward) or (p.position[0] != 0):
                             moves.append(str(p.position[0])+str(p.position[1])+str(mi[0])+str(mi[1])+p.name)
                     elif p.owner == 0:
                         if ((p.position[1] >= 7) | (mi[1] >= 7)) & self.promote_dict[p.name] & (p.position[0]!=0):
                             moves.append(str(p.position[0])+str(p.position[1])+str(mi[0])+str(mi[1])+p.promote_name)
-                        if ((10-mi[1]) > p.move_forward):
+                        if ((10-mi[1]) > p.move_forward) or (p.position[0] != 0):
                             moves.append(str(p.position[0])+str(p.position[1])+str(mi[0])+str(mi[1])+p.name)
 
 
