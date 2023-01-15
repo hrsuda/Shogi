@@ -25,11 +25,21 @@ def main():
     teban = sente
     players = ["human", "sudanza"]
     game = True
+    out = []
+    out_t = []
+
 
     while game:
         ps.plot_board(B.pieces)
 
         if teban == 0:
             move_str = None
-            while (not len(move_str)==6) or (move_str == "toryo"):
+            while (not len(move_str)==6) or (not move_str == "toryo"):
                 move_str = input()
+
+            if move_str == "toryo":break
+
+            data = B.out_data
+            moves = B.get_legal_moves()
+
+            for m in moves:
