@@ -9,6 +9,7 @@ import plot_shogi as ps
 
 
 def main():
+    plt.ion()
     args = sys.argv
 
     network_data_filename = args[1]
@@ -25,21 +26,34 @@ def main():
     teban = sente
     players = ["human", "sudanza"]
     game = True
-    out = []
-    out_t = []
-
 
     while game:
-        ps.plot_board(B.pieces)
+        ax = ps.plot_board(B.pieces)
+        plt.show()
+
+        moves = B.get_legal_moves()
+        move_data = []
+        for m in moves:
+            move_data.append(B.move_data_tmp((int(m[0]),int(m[1])),(int(m[2]),int(m[3])),m[4:]))
+
 
         if teban == 0:
-            move_str = None
-            while (not len(move_str)==6) or (not move_str == "toryo"):
+            move_str = ''
+            while (not (len(move_str)==6)):
                 move_str = input()
 
-            if move_str == "toryo":break
+        else:
+            result = []
+            for i in range(len(move_data)):
+                result.append(learning.sigmoid(network.predict(np.array([B.out_data,move_data[i]]).reshape(1,5600))))
+            ind = np.argsort(result,axis=0,)[::-1,0,0]
+            move_str = moves[ind[0]]
+        teban = 1 - teban
 
-            data = B.out_data
-            moves = B.get_legal_moves()
+        B.move(start=(int(move_str[0]), int(move_str[1])),goal=(int(move_str[2]),int(move_str[3])),name=move_str[4:])
 
-            for m in moves:
+
+
+
+if __name__ == "__main__":
+    main()
