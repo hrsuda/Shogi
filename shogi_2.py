@@ -739,7 +739,7 @@ class Board:
             # print(aa.shape)
             if i % 2==1:
                 aa[:,:,:,:,1:,1:] = aa[:, :,:,:, 9:0:-1, 9:0:-1]
-                aa[:,:,:,:] = aa[:,:,:,::-1]
+                # aa[:,:,:,:] = aa[:,:,:,::-1]
             # print(moves)
             if not (np.array(moves) == mv[0:6]).any():
                 raise ValueError
