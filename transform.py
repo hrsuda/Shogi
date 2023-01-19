@@ -56,14 +56,14 @@ def main():
 
 
 
-        if (i % 50 == 0) & (i>0):
+        if (i % 20 == 0) & (i>0):
             print(i)
             output = np.concatenate(output, axis=0)
             output2 = np.concatenate(output2, axis=0)
             # print(np.array(output).shape)
 
-            np.save(out_filename + str(i), output.astype(np.int8))
-            np.save(out_filename + str(i) +'_t', output2.astype(np.int8))
+            np.savez_compressed(out_filename + str(i), output.astype(np.int8))
+            np.savez_compressed(out_filename + str(i) +'_t', output2.astype(np.int8))
 
             output = []
             output2 = []
@@ -72,9 +72,11 @@ def main():
     output = np.concatenate(output, axis=0)
     output2 = np.concatenate(output2, axis=0)
 
-    np.save(out_filename + str(i), output.astype(np.int8))
-    np.save(out_filename + str(i) +'_t', output2.astype(np.int8))
+    # np.save(out_filename + str(i), output.astype(np.int8))
+    # np.save(out_filename + str(i) +'_t', output2.astype(np.int8))
 
+    np.savez_compressed(out_filename + str(i), output.astype(np.int8))
+    np.savez_compressed(out_filename + str(i) +'_t', output2.astype(np.int8))
 
 
 # def main():
