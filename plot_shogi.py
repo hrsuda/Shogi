@@ -4,8 +4,6 @@ import pickle
 import init_position
 import matplotlib.patches as patches
 from matplotlib import rcParams
-rcParams['font.family'] = 'sans-serif'
-rcParams['font.sans-serif'] = ['Hiragino Maru Gothic Pro', 'Yu Gothic', 'Meirio', 'Takao', 'IPAexGothic', 'IPAPGothic', 'VL PGothic', 'Noto Sans CJK JP']
 
 piece_text = ['王', '飛', '竜', '角', '馬', '金', '銀', '成銀', '桂', '成桂', '香', '成香', '歩', 'と']
 names_dict = dict(zip(
@@ -13,7 +11,11 @@ names_dict = dict(zip(
 ['王', '飛', '竜', '角', '馬', '金', '銀', '成銀', '桂', '成桂', '香', '成香', '歩', 'と']
 ))
 
-def plot_board(pieces):
+def plot_board(pieces, language="japanese"):
+    if language =="japanese":
+        rcParams['font.family'] = 'sans-serif'
+        rcParams['font.sans-serif'] = ['Hiragino Maru Gothic Pro', 'Yu Gothic', 'Meirio', 'Takao', 'IPAexGothic', 'IPAPGothic', 'VL PGothic', 'Noto Sans CJK JP']
+
     x = np.arange(0,10) + 0.5
     y = np.arange(0,10) + 0.5
     ax = plt.subplot(111)
@@ -41,7 +43,11 @@ def plot_board(pieces):
     return ax
 
 
-def plot_board_from_data(data):
+def plot_board_from_data(data, language="japanese"):
+    if language =="japanese":
+        rcParams['font.family'] = 'sans-serif'
+        rcParams['font.sans-serif'] = ['Hiragino Maru Gothic Pro', 'Yu Gothic', 'Meirio', 'Takao', 'IPAexGothic', 'IPAPGothic', 'VL PGothic', 'Noto Sans CJK JP']
+
     names = np.array(piece_text)
     x = np.arange(0,10) + 0.5
     y = np.arange(0,10) + 0.5
@@ -80,7 +86,11 @@ def plot_board_from_data(data):
     return ax
 
 
-def plot_move(data1,data2):
+def plot_move(data1,data2, language="japanese"):
+    if language =="japanese":
+        rcParams['font.family'] = 'sans-serif'
+        rcParams['font.sans-serif'] = ['Hiragino Maru Gothic Pro', 'Yu Gothic', 'Meirio', 'Takao', 'IPAexGothic', 'IPAPGothic', 'VL PGothic', 'Noto Sans CJK JP']
+
     # names = np.array(["OU", "HI", "RY", "KA", "UM", "KI", "GI", "NG", "KE", "NK", "KY", "NY", "FU", "TO"])
     names = np.array(piece_text)
     x = np.arange(0,10) + 0.5

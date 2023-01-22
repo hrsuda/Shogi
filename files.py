@@ -62,7 +62,7 @@ def read_csa_file(filename):
 
 def get_file_names(dir_path, file_type="csa"):
     files = os.listdir(dir_path)
-    out = [n for n in files if file_type == n[-3:]]
+    out = [dir_path + '/' + n for n in files if file_type == n[-3:]]
     return out
 
 def get_move_files():
