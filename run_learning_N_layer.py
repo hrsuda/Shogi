@@ -1,13 +1,16 @@
 import numpy as np
 import sys
-from learning import *
 import matplotlib.pyplot as plt
 import pickle
 import argparse
+import os
+
+from learning import *
+import files
 
 def main():
     # args = sys.argv
-    argparse.ArgumentParser(
+    parser = argparse.ArgumentParser(
                     prog = 'ProgramName',
                     description = 'What the program does',
                     epilog = 'Text at the bottom of help')
@@ -17,10 +20,10 @@ def main():
     parser.add_argument("output_path", type=str, help="file")
 
     parser.add_argument("--network", default=None,action="store", type=str, help="file")
-    parser.add_argument("--learning_rate", default=0.1, action="store", type=floot, help="")
+    parser.add_argument("--learning_rate", default=0.1, action="store", type=float, help="")
     parser.add_argument("--batch_size", default=128,  action="store", type=int, help="")
-    parser.add_argument("--iters_num", default=1e5,  action="store", type=int, help="")
-    parser.add_argument("--test_len", default=1e3,  action="store", type=int, help="")
+    parser.add_argument("--iters_num", default=10000,  action="store", type=int, help="")
+    parser.add_argument("--test_len", default=100,  action="store", type=int, help="")
 
 
 
@@ -33,24 +36,27 @@ def main():
     learning_rate = args.learning_rate
     test_len = args.test_len
 
-    if os.isfile(input_path):
+
+    if os.path.isfile(input_path):
         if input_path[-3:]=="npy":
             data = np.load(input_path, allow_pickle=True)
             data2 = np.load(input_path.replace(".npy","_t.npy"), allow_pickle=True)
         elif input_path[-3:]=="npz":
             data = np.load(input_path, allow_pickle=True)["arr_0"]
             data2 = np.load(input_path.replace(".npz","_t.npz"), allow_pickle=True)["arr_0"]
-    elif os.isdir(input_path):
-        filelist = files.get_file_names(input_path)
+    elif os.path.isdir(input_path):
+        filelist = files.get_file_names(input_path,file_type="npz")
         data = []
         data2 = []
+        print(filelist)
         for f in filelist:
-            if input_path[-5:]=="_t.npy":
+            if f[-6:]=="_t.npy":
                 data2.append(np.load(f, allow_pickle=True))
-                data.append(np.load(input_path.replace("_t.npy",".npy"), allow_pickle=True))
-            elif input_path[-5:]=="_t.npz":
-                data2.append(np.load(f, allow_pickle=True))["arr_0"]
-                data.append(np.load(input_path.replace("_t.npz",".npz"), allow_pickle=True))["arr_0"]
+                data.append(np.load(f.replace("_t.npy",".npy"), allow_pickle=True))
+            elif f[-6:]=="_t.npz":
+                print(f)
+                data2.append(np.load(f)["arr_0"])
+                data.append(np.load(f.replace("_t.npz",".npz"))["arr_0"])
         data = np.concatenate(data,axis=0)
         data2 = np.concatenate(data2,axis=0)
 
@@ -80,10 +86,10 @@ def main():
     # t_test = t_bool[test_mask]
     t_test = data2[test_mask]
     # print(data[0])
-    if network iss None:
+    if args.network is None:
         network = NLayerNet(input_size=2*14*2*10*10, hidden_size_list=[200,150,100,50], output_size=1,weight_init_std=0.3)
     else:
-        with open(network, "rb") as f:
+        with open(args.network, "rb") as f:
             network = pickle.load(f)
 
     data_size = x_data.shape[0]
@@ -123,7 +129,7 @@ def main():
 
         train_loss_list.append(loss)
 
-        if i % iter_per_epoch == 0:
+        if i % 1000 == 0:
             train_acc = network.accuracy(x_test, t_test)
             train_acc_list.append(train_acc)
 
@@ -139,7 +145,7 @@ def main():
     # print(network.params)
     # np.save(out_name+"_W",np.concatenate(network.W_params))
     # np.save(out_name+"_b",np.concatenate(network.b_params))
-    with open(out_name, 'wb') as f:
+    with open(output_path, 'wb') as f:
         pickle.dump(network, f)
 
 
