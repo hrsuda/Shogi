@@ -73,7 +73,7 @@ def main():
 
     x_data = data[~test_mask]
     # t_data = t_bool
-    t_data = data2.astype(bool)[~test_mask]
+    t_data = data2.astype(int)[~test_mask]
     x_data_good = x_data[t_data]
     t_data_good = t_data[t_data]
     x_data_bad = x_data[~t_data]
