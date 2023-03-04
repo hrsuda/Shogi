@@ -4,8 +4,14 @@ import matplotlib.pyplot as plt
 import pickle
 import argparse
 import os
+try:
+    from learning_cupy import *
+    print("CuPy")
+except:
+    from learning import *
+# from learning import *
 
-from learning import *
+
 import files
 
 def main():
@@ -23,7 +29,7 @@ def main():
     parser.add_argument("--learning_rate", default=0.1, action="store", type=float, help="")
     parser.add_argument("--batch_size", default=128,  action="store", type=int, help="")
     parser.add_argument("--iters_num", default=10000,  action="store", type=int, help="")
-    parser.add_argument("--test_len", default=100,  action="store", type=int, help="")
+    parser.add_argument("--test_len", default=1000,  action="store", type=int, help="")
 
 
 
@@ -138,7 +144,7 @@ def main():
             # print(grad)
     print(train_acc_list)
 
-    plt.plot(range(iters_num),train_loss_list)
+    plt.plot(range(iters_num),np.array(train_loss_list))
 
     plt.yscale('log')
     plt.savefig("hoge.pdf")

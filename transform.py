@@ -24,7 +24,7 @@ def main():
         B = Board(pieces)
         # print(fname)
         # out,good = B.read_file(input_dir+"/"+fname)
-        _ = B.read_file_with_bad(input_dir+"/"+fname)
+        _ = B.read_file_with_bad(fname)
         if _ is None:continue
         out, good = _
         print(np.where(good))

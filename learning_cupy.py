@@ -2,9 +2,13 @@ import numpy as np
 import scipy as sp
 from collections import OrderedDict
 
+import cupy as cp
+
 def softmax(x):
-    x = x - np.max(x, axis=-1, keepdims=True)   # オーバーフロー対策
-    return np.exp(x) / np.sum(np.exp(x), axis=-1, keepdims=True)
+    x = x - cp.max(x, axis=-1, keepdims=True)   # オーバーフロー対策
+    x = cp.exp(x) / cp.sum(cp.exp(x), axis=-1, keepdims=True)
+
+    return x
 
 
 def cross_entropy_error(y, t):
@@ -13,7 +17,7 @@ def cross_entropy_error(y, t):
         y = y.reshape(1, y.size)
 
     batch_size = y.shape[0]
-    return -np.sum(t * np.log(y + 1e-12)) / batch_size
+    return -cp.sum(t * cp.log(y + 1e-12)) / batch_size
 
 
 
@@ -22,12 +26,13 @@ def sum_squared_error(y, t):
         t = t.reshape(1, t.size) #1d->2d
         y = y.reshape(1, y.size)
     batch_size = y.shape[0]
-    return 0.5 * np.sum(y-t)**2 / batch_size
+    return 0.5 * cp.sum(y-t)**2 / batch_size
 
 
 def sigmoid(x):
+
     # x = x - np.min(x, axis=-1, keepdims=True)
-    out = 1. / (1. + np.exp(-x))
+    out = 1. / (1. + cp.exp(-x))
     return out
 
 
@@ -57,8 +62,8 @@ class Sigmoid(object):
         self.out = None
 
     def forward(self, x):
-        # x = x - np.max(x, axis=-1, keepdims=True)
-        out = 1. / (1. + np.exp(-x))
+        # x = x - cp.max(x, axis=-1, keepdims=True)
+        out = 1. / (1. + cp.exp(-x))
         self.out = out
         return out
     def backward(self, dout):
@@ -103,14 +108,14 @@ class Affine:
         x = x.reshape(x.shape[0], -1)
         self.x = x
 
-        out = np.dot(self.x, self.W) + self.b
+        out = cp.dot(self.x, self.W) + self.b
 
         return out
 
     def backward(self, dout):
-        dx = np.dot(dout, self.W.T)
-        self.dW = np.dot(self.x.T, dout)
-        self.db = np.sum(dout, axis=0)
+        dx = cp.dot(dout, self.W.T)
+        self.dW = cp.dot(self.x.T, dout)
+        self.db = cp.sum(dout, axis=0)
 
         dx = dx.reshape(*self.original_x_shape)  # 入力データの形状に戻す（テンソル対応）
         return dx
@@ -141,7 +146,7 @@ class Convolution:
         col = im2col(x, FH, FW, self.stride, self.pad)
         col_W = self.W.reshape(FN, -1).T
 
-        out = np.dot(col, col_W) + self.b
+        out = cp.dot(col, col_W) + self.b
         out = out.reshape(N, out_h, out_w, -1).transpose(0, 3, 1, 2)
 
         self.x = x
@@ -154,11 +159,11 @@ class Convolution:
         FN, C, FH, FW = self.W.shape
         dout = dout.transpose(0,2,3,1).reshape(-1, FN)
 
-        self.db = np.sum(dout, axis=0)
-        self.dW = np.dot(self.col.T, dout)
+        self.db = cp.sum(dout, axis=0)
+        self.dW = cp.dot(self.col.T, dout)
         self.dW = self.dW.transpose(1, 0).reshape(FN, C, FH, FW)
 
-        dcol = np.dot(dout, self.col_W.T)
+        dcol = cp.dot(dout, self.col_W.T)
         dx = col2im(dcol, self.x.shape, FH, FW, self.stride, self.pad)
 
         return dx
@@ -182,8 +187,8 @@ class Pooling:
         col = im2col(x, self.pool_h, self.pool_w, self.stride, self.pad)
         col = col.reshape(-1, self.pool_h*self.pool_w)
 
-        arg_max = np.argmax(col, axis=1)
-        out = np.max(col, axis=1)
+        arg_max = cp.argmax(col, axis=1)
+        out = cp.max(col, axis=1)
         out = out.reshape(N, out_h, out_w, C).transpose(0, 3, 1, 2)
 
         self.x = x
@@ -195,8 +200,8 @@ class Pooling:
         dout = dout.transpose(0, 2, 3, 1)
 
         pool_size = self.pool_h * self.pool_w
-        dmax = np.zeros((dout.size, pool_size))
-        dmax[np.arange(self.arg_max.size), self.arg_max.flatten()] = dout.flatten()
+        dmax = cp.zeros((dout.size, pool_size))
+        dmax[cp.arange(self.arg_max.size), self.arg_max.flatten()] = dout.flatten()
         dmax = dmax.reshape(dout.shape + (pool_size,))
 
         dcol = dmax.reshape(dmax.shape[0] * dmax.shape[1] * dmax.shape[2], -1)
@@ -262,10 +267,10 @@ class TwoLayerNet(object):
     def __init__(self, input_size, hidden_size, output_size, weight_init_std=0.1):
 
         self.params = {}
-        self.params["W1"] = weight_init_std * np.random.randn(input_size, hidden_size)
-        self.params["b1"] = np.random.randn(hidden_size)+2
+        self.params["W1"] = weight_init_std * cp.random.randn(input_size, hidden_size)
+        self.params["b1"] = cp.random.randn(hidden_size)+2
         self.params["W2"] = weight_init_std * np.random.randn(hidden_size, output_size)
-        self.params["b2"] = np.random.randn(output_size)+2
+        self.params["b2"] = cp.random.randn(output_size)+2
 
 
         self.layers = OrderedDict()
@@ -289,10 +294,10 @@ class TwoLayerNet(object):
 
     def accuracy(self, x, t):
         y = self.predict(x)
-        y = np.argmax(y, axis=1)
-        if t.ndim != 1: t = np.argmax(t, axis=1)
+        y = cp.argmax(y, axis=1)
+        if t.ndim != 1: t = cp.argmax(t, axis=1)
 
-        accuracy = np.sum(y==t)/float(t.shape[0])
+        accuracy = cp.sum(y==t)/float(t.shape[0])
 
         return accuracy
 
@@ -320,11 +325,11 @@ class TwoLayerNet(object):
 class NLayerNet(object):
 
     def __init__(self, input_size, hidden_size_list, output_size, weight_init_std=0.1):
-
+        self.device = "gpu"
         self.W_params = []
         self.b_params = []
-        w = weight_init_std * np.random.randn(input_size, hidden_size_list[0])
-        b = weight_init_std * np.random.randn(hidden_size_list[0])
+        w = weight_init_std * cp.random.randn(input_size, hidden_size_list[0])
+        b = weight_init_std * cp.random.randn(hidden_size_list[0])
         self.layers = []
 
 
@@ -335,16 +340,16 @@ class NLayerNet(object):
         self.layers.append(Relu())
 
         for n in range(0,N-1):
-            w = weight_init_std * np.random.randn(hidden_size_list[n], hidden_size_list[n+1])
-            b = weight_init_std * np.random.randn(hidden_size_list[n+1])
+            w = weight_init_std * cp.random.randn(hidden_size_list[n], hidden_size_list[n+1])
+            b = weight_init_std * cp.random.randn(hidden_size_list[n+1])
 
             self.W_params.append(w)
             self.b_params.append(b)
             self.layers.append(Affine(w,b))
             self.layers.append(Sigmoid())
 
-        w = weight_init_std * np.random.randn(hidden_size_list[N-1], output_size)
-        b = weight_init_std * np.random.randn(output_size)
+        w = weight_init_std * cp.random.randn(hidden_size_list[N-1], output_size)
+        b = weight_init_std * cp.random.randn(output_size)
         self.W_params.append(w)
         self.b_params.append(b)
         self.layers.append(Affine(w,b))
@@ -354,17 +359,21 @@ class NLayerNet(object):
         self.lastLayer = SigmoidWithLoss()
 
     def predict(self, x):
+        x = cp.asarray(x)
         for layer in self.layers:
             x = layer.forward(x)
 
         return x
 
     def loss(self, x, t):
+        # x = cp.asarray(x)
+        t = cp.asarray(t)
         y = self.predict(x)
 
         return self.lastLayer.forward(y, t)
 
     def accuracy(self, x, t):
+        t = cp.asarray(t)
         y = self.predict(x)
         y = sigmoid(y)[:,0]
         y = y>0.5
@@ -373,7 +382,7 @@ class NLayerNet(object):
         # print(np.where(y[0]==t))
         # y = np.argmax(y, axis=1)
         # if t.ndim != 1:t = np.argmax(t, axis=1)
-        accuracy = np.sum(y==t) / float(len(t))
+        accuracy = cp.sum(y==t) / float(len(t))
         return accuracy
 
     def gradient(self, x, t):
