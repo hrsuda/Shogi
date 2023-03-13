@@ -178,7 +178,8 @@ class FU(Piece):
         self.legal_move *= fu_legal
 
 
-
+    def check_no_promote(self, goal):
+        return (goal[1]!=(1+8*self.owner)) | (p.name == p.promote_name)
 
 
 
@@ -226,7 +227,8 @@ class KYO(Piece):
             self.legal_move *= 1-s_positions
 
     def check_no_promote(self,goal):
-        return goal[1]!=(1+8*self.owner)
+
+        return (goal[1]!=(1+8*self.owner)) | (p.name == p.promote_name)
 
 
 class KEIMA(Piece):
@@ -237,7 +239,7 @@ class KEIMA(Piece):
         self.move_forward = 2
 
     def check_no_promote(self,goal):
-        return goal[1] not in [1+8*self.owner, 2+6*self.owner]
+        return (goal[1] not in [1+8*self.owner, 2+6*self.owner]) | (p.name == p.promote_name)
 
 
 class GIN(Piece):
@@ -565,7 +567,6 @@ class Board:
                 # print(np.where(self.out_data==1))
                 aa[:,0,...] = self.out_data.copy()
                 aa[:,1,...] = a
-                # print(aa.shape)
                 if i % 2==1:
                     aa[:,:,:,:,1:,1:] = aa[:, :,:,:, 9:0:-1, 9:0:-1]
                     aa[:,:,:,:] = aa[:,:,:,::-1]
@@ -593,16 +594,15 @@ class Board:
         # print(self.out_data)
         for p in self.pieces:
             if p.owner == self.turn:
-                # print(p.name)
                 p.set_legal_move(self.out_data)
                 move_int = np.array(np.where(p.legal_move)).T + 1
-                # print(move_int)
-
-                moves =
 
                 for mi in move_int:
-
-
+                    if p.check_promote(mi):
+                        moves.append(p.promote_name+str(p.position[0])+str(p.position[1])+str(mi[0])+str(mi[1]))
+                    if p.check_no_promote(mi):
+                        moves.append(p.name+str(p.position[0])+str(p.position[1])+str(mi[0])+str(mi[1]))
+            
         return np.unique(moves)
 
 
