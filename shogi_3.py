@@ -37,12 +37,12 @@ class Piece:
 
     def check_promote(self, goal):
         bool_name = self.name!=self.promote_name
-        if position==(0,0):
+        if self.position==(0,0):
             bool_position = False
         elif self.owner==0:
-            bool_position = (p.position[1]<4) | (goal[1]<4)
+            bool_position = (self.position[1]<4) | (goal[1]<4)
         elif self.owner==1:
-            bool_position = (p.position[1]>6) | (goal[1]>6)
+            bool_position = (self.position[1]>6) | (goal[1]>6)
 
         return bool_name & bool_position
 
@@ -53,21 +53,22 @@ class Piece:
         self.position = position
 
     def _set_legal_move_board(self, banmen):
+        self.legal_move = np.zeros([17,17])
 
 
-        move = self.move_dict[self.name]
-        positions = np.sum(banmen[self.owner], axis=0)
-
-        if self.owner==1:
+        move = self.move_dict[self.name].copy()
+        positions = np.sum(banmen, axis=1, dtype=int)
+        s_positions_board = positions[0]
+        g_positions_board = positions[1]
+        if self.owner:
             move = move[::-1,::-1]
             s_positions_board, g_positions_board = g_positions_board, s_positions_board
 
         self.legal_move = move[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
-        self.legal_move *= 1 - positions
+        self.legal_move *= 1 - s_positions_board
 
 
     def _set_legal_move_komadai(self, banmen):
-
 
         positions = np.sum(banmen,axis=(0,1))
         self.legal_move = 1 - positions
@@ -98,30 +99,33 @@ class HISHA(Piece):
 
 
     def _set_legal_move_board(self,banmen):
-        move = self.move_dict[self.name]
+        self.legal_move = np.zeros([17,17])
+        move = self.move_dict[self.name].copy()
+        positions = np.sum(banmen, axis=1, dtype=int)
+        s_positions = 1-positions[0]
+        g_positions = 1-positions[1]
 
-        s_positions, g_positions = np.sum(banmen,axis=1)
-
-        if not self.owner:
+        if self.owner:
             s_positions, g_positions = g_positions, s_positions
-        s_positions_17, g_positions_17 = np.zeros((2,17,17))
+        s_positions_17 = np.ones((17,17))
+        g_positions_17 = np.ones((17,17))
         s_positions_17[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]] = s_positions
         g_positions_17[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]] = g_positions
-        a = np.zeros((17,17))
         b0 = np.array([True,True,True,True])
         # print(positions)
         for i in range(1,9):
-            x = ((i+8,8),
-                (-i+8,8),
-                (8,i+8),
-                (8,-i+8))
-            a = b0 * s_positions_17[x[0],x[1],x[2],x[3]]
-            b0 = b0 * g_positions_17[x[0],x[1],x[2],x[3]] * a
-        if self.name == "RY":
-            a = a + move[1]
+            x = ((i+8, -i+8, 8, 8),
+                (8, 8, i+8, -i+8))
+            self.legal_move[x] = b0 * s_positions_17[x]
 
-        self.legal_move = a[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
-        self.legal_move *= 1-s_positions
+            b0 = b0 * g_positions_17[x]* self.legal_move[x]
+            # print(self.legal_move)
+        if self.name == "RY":
+            self.legal_move = self.legal_move + move[1]
+
+        self.legal_move = self.legal_move[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
+        self.legal_move *= s_positions
+        # raise ValueError
 
 
 class KAKU(Piece):
@@ -130,31 +134,36 @@ class KAKU(Piece):
         super().__init__(init_position, owner, name=name)
         self.promote_name = "UM"
 
+
     def _set_legal_move_board(self,banmen):
-        move = self.move_dict[self.name]
+        self.legal_move = np.zeros([17,17])
+        move = self.move_dict[self.name].copy()
+        positions = np.sum(banmen, axis=1, dtype=int)
+        s_positions = 1-positions[0]
+        g_positions = 1-positions[1]
 
-        s_positions, g_positions = np.sum(banmen,axis=1)
-
-        if not self.owner:
+        if self.owner:
             s_positions, g_positions = g_positions, s_positions
-        s_positions_17, g_positions_17 = np.zeros((2,17,17))
+        s_positions_17 = np.ones((17,17))
+        g_positions_17 = np.ones((17,17))
         s_positions_17[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]] = s_positions
         g_positions_17[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]] = g_positions
-        a = np.zeros((17,17))
         b0 = np.array([True,True,True,True])
         # print(positions)
         for i in range(1,9):
-            x = ((i+8,i+8),
-                (-i+8,i+8),
-                (i+8,-i+8),
-                (-i+8,-i+8))
-            a = b0 * s_positions_17[x[0],x[1],x[2],x[3]]
-            b0 = b0 * g_positions_17[x[0],x[1],x[2],x[3]] * a
-        if self.name == "UM":
-            a = a + move[1]
+            x = ((i+8, -i+8, -i+8, i+8),
+                (i+8, i+8, -i+8, -i+8))
+            self.legal_move[x] = b0 * s_positions_17[x]
 
-        self.legal_move = a[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
-        self.legal_move *= 1-s_positions
+            b0 = b0 * g_positions_17[x]* self.legal_move[x]
+            # print(self.legal_move)
+        if self.name == "UM":
+            self.legal_move = self.legal_move + move[1]
+
+        self.legal_move = self.legal_move[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
+        self.legal_move *= s_positions
+        # raise ValueError
+
 
 class FU(Piece):
 
@@ -164,6 +173,7 @@ class FU(Piece):
         self.move_forward = 1
 
     def _set_legal_move_komadai(self, banmen):
+        
         positions = np.sum(banmen,axis=(0,1))
         self.legal_move = 1 - positions
 
@@ -173,13 +183,13 @@ class FU(Piece):
             self.legal_move[:,9-self.move_forward:] = 0
 
 
-        fu_legal = np.sum(banmen[self.turn,12],axis=1)
+        fu_legal = 1 - np.sum(banmen[self.owner,12],axis=1)
 
         self.legal_move *= fu_legal
 
 
     def check_no_promote(self, goal):
-        return (goal[1]!=(1+8*self.owner)) | (p.name == p.promote_name)
+        return (goal[1]!=(1+8*self.owner)) | (self.name == self.promote_name)
 
 
 
@@ -192,14 +202,13 @@ class KYO(Piece):
 
 
     def _set_legal_move_board(self,banmen):
-        move = self.move_dict[self.name]
-
-        s_positions, g_positions = np.sum(banmen,axis=1)
+        self.legal_move = np.zeros([17,17])
+        move = self.move_dict[self.name].copy()
 
         if self.name == "NY":
             positions = np.sum(banmen[self.owner], axis=0)
 
-            if self.owner==1:
+            if self.owner:
                 move = move[::-1,::-1]
                 s_positions_board, g_positions_board = g_positions_board, s_positions_board
 
@@ -208,27 +217,33 @@ class KYO(Piece):
 
 
         else:
+            positions = np.sum(banmen, axis=1, dtype=int)
+            s_positions = 1-positions[0]
+            g_positions = 1-positions[1]
 
-            if not self.owner:
+
+            if self.owner:
                 s_positions, g_positions = g_positions, s_positions
-            s_positions_17, g_positions_17 = np.zeros((2,17,17))
+            s_positions_17, g_positions_17 = np.ones((2,17,17))
             s_positions_17[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]] = s_positions
             g_positions_17[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]] = g_positions
-            a = np.zeros((17,17))
-            b0 = np.array([True,True,True,True])
+            
+            b0 = True
             # print(positions)
+            a = 1-2*self.owner
             for i in range(1,9):
-                x = (8,i+8)
-                a = b0 * s_positions_17[x]
-                b0 = b0 * g_positions_17[x] * a
+                x = (8,-i*a+8)
+                self.legal_move[x] = b0 * s_positions_17[x]
+                b0 = b0 * g_positions_17[x] * self.legal_move[x]
 
 
-            self.legal_move = a[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
-            self.legal_move *= 1-s_positions
+            self.legal_move = self.legal_move[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
+            self.legal_move *= s_positions
+
 
     def check_no_promote(self,goal):
 
-        return (goal[1]!=(1+8*self.owner)) | (p.name == p.promote_name)
+        return (goal[1]!=(1+8*self.owner)) | (self.name == self.promote_name)
 
 
 class KEIMA(Piece):
@@ -239,7 +254,7 @@ class KEIMA(Piece):
         self.move_forward = 2
 
     def check_no_promote(self,goal):
-        return (goal[1] not in [1+8*self.owner, 2+6*self.owner]) | (p.name == p.promote_name)
+        return (goal[1] not in [1+8*self.owner, 2+6*self.owner]) | (self.name == self.promote_name)
 
 
 class GIN(Piece):
@@ -261,13 +276,13 @@ class OU(Piece):
     def __init__(self, init_position, owner, name="OU"):
         super().__init__(init_position, owner, name=name)
 
-    def check_promote(self, goal):
+    def check_promote(self,goal):
         return False
 
 class Board:
     def __init__(self,pieces,players=["P1", "P2"]):
         self.pieces = tuple(pieces)
-        self.turn = 1
+        self.turn = 0
         self.banmen = np.zeros([2,14,9,9])
         self.komadai = np.zeros([2,14])
 
@@ -297,8 +312,8 @@ class Board:
         ["OU", "HI", "RY", "KA", "UM", "KI", "GI", "NG", "KE", "NK", "KY", "NY", "FU", "TO"],
         [False,True,False,True,False,False,True,False,True,False,True,False,True,False]
         ))
-        self.names = tuple(["OU", "HI", "RY", "KA", "UM", "KI", "GI", "NG", "KE", "NK", "KY", "NY", "FU", "TO"],dtype=str)
-        self.piece_class = [OU, HISHA, HIHA, KAKU, KAKU, KIN, GIN, GIN, KEIMA, KEIMA, KYO, KYO, FU, FU]
+        self.names = tuple(["OU", "HI", "RY", "KA", "UM", "KI", "GI", "NG", "KE", "NK", "KY", "NY", "FU", "TO"])
+        self.piece_class = [OU, HISHA, HISHA, KAKU, KAKU, KIN, GIN, GIN, KEIMA, KEIMA, KYO, KYO, FU, FU]
         self.raw_names_dict_ind = dict(zip(
         ["OU", "HI", "RY", "KA", "UM", "KI", "GI", "NG", "KE", "NK", "KY", "NY", "FU", "TO"],
         [0,1,1,3,3,5,6,6,8,8,10,10,12,12]
@@ -357,16 +372,19 @@ class Board:
 
     def move(self, start, goal, name):
 
-        p = self.get_piece(self.turn, name, start)
-        p.position = tuple(goal)
+        p = self.get_piece(self.pieces, self.turn, name, start)
 
-        target = self.get_piece_banmen(goal)
+        target = self.get_piece_banmen(self.pieces, goal)
+        print(target)
         if target is not None:
+            print(target.owner)
             target.captured()
+            print(target.owner)
 
         if name !=p.name:
             p.name = p.promote_name
-
+        p.position = tuple(goal)
+        # self.tu
 
     def clear(self):
         self.pieces = []
@@ -388,18 +406,20 @@ class Board:
 
     def move_tmp(self, pieces, start, goal, name):
         p = self.get_piece(pieces, self.turn, name, start)
-        p.position = tuple(goal)
 
-        target = self.get_piece_banmen(goal)
+        target = self.get_piece_banmen(pieces,goal)
         if target is not None:
             target.captured()
 
         if name !=p.name:
             p.name = p.promote_name
+        p.position = tuple(goal)
+
         return pieces
 
     def move_data_tmp(self, start, goal, name):
         pieces_tmp = copy.deepcopy(self.pieces)
+
         pieces_tmp = self.move_tmp(pieces_tmp, start, goal, name)
 
         banmen = np.zeros([2,14,9,9])
@@ -407,10 +427,10 @@ class Board:
 
         for p in pieces_tmp:
             if p.position==(0,0):
-                komadai[p.owner, self.names_dict[p.name]] =+ 1
+                komadai[p.owner, self.names_ind[p.name]] += 1
 
             else:
-                banmen[p.owner, self.names_dict[p.name], p.position[0]-1, p.position[1]-1] =+ 1
+                banmen[p.owner, self.names_ind[p.name], p.position[0]-1, p.position[1]-1] += 1
 
         return banmen, komadai
 
@@ -421,10 +441,10 @@ class Board:
 
         for p in self.pieces:
             if p.position==(0,0):
-                komadai[p.owner, self.names_dict[p.name]] =+ 1
+                self.komadai[p.owner, self.names_ind[p.name]] += 1
 
             else:
-                banmen[p.owner, self.names_dict[p.name], p.position[0]-1, p.position[1]-1] =+ 1
+                self.banmen[p.owner, self.names_ind[p.name], p.position[0]-1, p.position[1]-1] += 1
 
     def read_file(self, filename):
         # data = pf.read_csv(filename, comment="'", header=hoge)
@@ -444,8 +464,8 @@ class Board:
 
             elif (len(l)>6) and ((l[0]=="+") or (l[0]=="-")):
                 # print(l)
-                start = [int(l[1]),int(l[2])]
-                goal = [int(l[3]),int(l[4])]
+                start = (int(l[1]),int(l[2]))
+                goal = (int(l[3]),int(l[4]))
                 name = l[5:7]
                 self.move(start, goal, name)
                 self.turn = 1 - self.turn
@@ -470,7 +490,7 @@ class Board:
                 return None
 
     #
-    def read_file_with_bad(self, filename, ):
+    def read_file_with_bad(self, filename):
         # data = pf.read_csv(filename, comment="'", header=hoge)
 
         _ = files.read_csa_file(filename)
@@ -486,6 +506,7 @@ class Board:
         banmen_out = []
         komadai_out = []
         for i,mv in enumerate(move_data):
+            print(i)
             # print(mv)
             self.board_data()
             start = [int(mv[0]),int(mv[1])]
@@ -501,11 +522,11 @@ class Board:
             for j,m in enumerate(moves):
                 banmen_tmp,komadai_tmp = self.move_data_tmp(start=(int(m[0]),int(m[1])),goal=(int(m[2]),int(m[3])),name=m[4:6])
                 komadai_move[j,1,...] = komadai_tmp
-                banmen_tmp[j,1,...] = banmen_tmp
+                banmen_move[j,1,...] = banmen_tmp
             # print(aa.shape)
             if i % 2==1:
-                komadai_move = komadai_move[:, :, ::-1]
-                banmen_move = banmen_move[:, :, ::-1, :, ::-1, ::-1]
+                komadai_move = komadai_move[:, ::-1, :]
+                banmen_move = banmen_move[:, ::-1, :, :, ::-1, ::-1]
                 # aa[:,:,:,:] = aa[:,:,:,::-1]
             # print(moves)
             if not (np.array(moves) == mv[0:6]).any():
@@ -513,6 +534,11 @@ class Board:
             good.append((np.array(moves) == mv[0:6]))
             komadai_out.append(komadai_tmp)
             banmen_out.append(banmen_tmp)
+
+            # print(self.banmen.sum(axis=(0,1)))
+            print(self.komadai)
+            print(self.turn)
+            print(mv)
             self.move(start, goal, name)
 
             self.turn = 1- self.turn
@@ -589,19 +615,19 @@ class Board:
 
     def get_legal_moves(self):
         moves = []
-        self.get_array()
+        
         self.board_data()
         # print(self.out_data)
         for p in self.pieces:
             if p.owner == self.turn:
-                p.set_legal_move(self.out_data)
+                p.set_legal_move(self.banmen)
                 move_int = np.array(np.where(p.legal_move)).T + 1
-
+                # print(p.name)
                 for mi in move_int:
                     if p.check_promote(mi):
-                        moves.append(p.promote_name+str(p.position[0])+str(p.position[1])+str(mi[0])+str(mi[1]))
+                        moves.append(str(p.position[0])+str(p.position[1])+str(mi[0])+str(mi[1])+p.promote_name)
                     if p.check_no_promote(mi):
-                        moves.append(p.name+str(p.position[0])+str(p.position[1])+str(mi[0])+str(mi[1]))
+                        moves.append(str(p.position[0])+str(p.position[1])+str(mi[0])+str(mi[1])+p.name)
             
         return np.unique(moves)
 

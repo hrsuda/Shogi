@@ -1,4 +1,4 @@
-from shogi_2 import *
+from shogi_3 import *
 import numpy as np
 import files
 import pickle
@@ -24,60 +24,40 @@ def main():
         B = Board(pieces)
         # print(fname)
         # out,good = B.read_file(input_dir+"/"+fname)
-        _ = B.read_file_with_bad(fname)
-        if _ is None:continue
-        out, good = _
+        out = B.read_file_with_bad(fname)
+        if out is None:continue
+        banmen, komadai, good = out
         print(np.where(good))
-        # print(out.shape)
-        # out2 = out.copy()
-        # out_g = out[good]
-        # out99 = out2[:,::-1,9:0:-1,9:0:-1]
-        # out2 = out2[:,:,::-1,:,:]
-
-        # print(out.shape)
-        # out[1::2,:,:,1:,1:] = out[0::2,:,::-1,9:0:-1,9:0:-1]
-        # raise ValueError
-        # l = len(out)
-        # ind1 = np.arange(0,l-1,2)
-        # ind2 = np.arange(1,l-1,2)
         #
-        # couple = np.zeros(l-1,2,14,2,10,10)
-        #
-        # couple[ind1,0] = out[ind1]
-        # couple[ind1,1] = out[ind1 + 1]
-        # couple[ind2,0] = out2[ind2]
-        # couple[ind2,1] = out2[ind2 + 1]
-        # couple[0::2,0] = out[0::2:,:,::-1,9:0:-1,9:0:-1]
-        #
-        if out is not None:
-        #     # print(i)
-            output.append(out)
-            output2.append(good)
+        output_b.append(banmen)
+        output_k.append(komadai)
+        output_g.append(good)
 
 
 
         if (i % 20 == 0) & (i>0):
             print(i)
-            output = np.concatenate(output, axis=0)
-            output2 = np.concatenate(output2, axis=0)
+            output_b = np.concatenate(output_b, axis=0)
+            output_k = np.concatenate(output_k, axis=0)
+            output_g = np.concatenate(output_g, axis=0)
             # print(np.array(output).shape)
 
-            np.savez_compressed(out_filename + str(i), output.astype(np.int8))
-            np.savez_compressed(out_filename + str(i) +'_t', output2.astype(np.int8))
+            np.savez_compressed(out_filename + str(i)+"_k", output_k.astype(np.int8))
+            np.savez_compressed(out_filename + str(i)+"_b", output_b.astype(np.int8))
+            np.savez_compressed(out_filename + str(i) +'_t', output_g.astype(np.int8))
 
             output = []
             output2 = []
 
 
-    output = np.concatenate(output, axis=0)
-    output2 = np.concatenate(output2, axis=0)
+        output_b = np.concatenate(output_b, axis=0)
+        output_k = np.concatenate(output_k, axis=0)
+        output_g = np.concatenate(output_g, axis=0)
+        # print(np.array(output).shape)
 
-    # np.save(out_filename + str(i), output.astype(np.int8))
-    # np.save(out_filename + str(i) +'_t', output2.astype(np.int8))
-
-    np.savez_compressed(out_filename + str(i), output.astype(np.int8))
-    np.savez_compressed(out_filename + str(i) +'_t', output2.astype(np.int8))
-
+        np.savez_compressed(out_filename + str(i)+"_k", output_k.astype(np.int8))
+        np.savez_compressed(out_filename + str(i)+"_b", output_b.astype(np.int8))
+        np.savez_compressed(out_filename + str(i) +'_t', output_g.astype(np.int8))
 
 # def main():
 #     init_position.main()
