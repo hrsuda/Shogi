@@ -13,8 +13,9 @@ def main():
     out_filename = args[2]
 
     file_names = files.get_file_names(input_dir, file_type="csa")
-    output = []
-    output2 = []
+    output_b = []
+    output_k = []
+    output_g = []
 
     out_0 = None
     for i,fname in enumerate(file_names):
@@ -37,27 +38,28 @@ def main():
 
         if (i % 20 == 0) & (i>0):
             print(i)
-            output_b = np.concatenate(output_b, axis=0)
-            output_k = np.concatenate(output_k, axis=0)
-            output_g = np.concatenate(output_g, axis=0)
+            output_b_np = np.concatenate(output_b, axis=0)
+            output_k_np = np.concatenate(output_k, axis=0)
+            output_g_np = np.concatenate(output_g, axis=0)
             # print(np.array(output).shape)
 
-            np.savez_compressed(out_filename + str(i)+"_k", output_k.astype(np.int8))
-            np.savez_compressed(out_filename + str(i)+"_b", output_b.astype(np.int8))
-            np.savez_compressed(out_filename + str(i) +'_t', output_g.astype(np.int8))
+            np.savez_compressed(out_filename + str(i)+"_k", output_k_np.astype(np.int8))
+            np.savez_compressed(out_filename + str(i)+"_b", output_b_np.astype(np.int8))
+            np.savez_compressed(out_filename + str(i) +'_t', output_g_np.astype(np.int8))
+            output_b = []
+            output_k = []
+            output_g = []
 
-            output = []
-            output2 = []
 
 
-        output_b = np.concatenate(output_b, axis=0)
-        output_k = np.concatenate(output_k, axis=0)
-        output_g = np.concatenate(output_g, axis=0)
-        # print(np.array(output).shape)
+    output_b = np.concatenate(output_b, axis=0)
+    output_k = np.concatenate(output_k, axis=0)
+    output_g = np.concatenate(output_g, axis=0)
+    # print(np.array(output).shape)
 
-        np.savez_compressed(out_filename + str(i)+"_k", output_k.astype(np.int8))
-        np.savez_compressed(out_filename + str(i)+"_b", output_b.astype(np.int8))
-        np.savez_compressed(out_filename + str(i) +'_t', output_g.astype(np.int8))
+    np.savez_compressed(out_filename + str(i)+"_k", output_k.astype(np.int8))
+    np.savez_compressed(out_filename + str(i)+"_b", output_b.astype(np.int8))
+    np.savez_compressed(out_filename + str(i) +'_t', output_g.astype(np.int8))
 
 # def main():
 #     init_position.main()

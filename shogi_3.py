@@ -183,7 +183,7 @@ class FU(Piece):
             self.legal_move[:,9-self.move_forward:] = 0
 
 
-        fu_legal = 1 - np.sum(banmen[self.owner,12],axis=1)
+        fu_legal = ((1 - np.sum(banmen[self.owner,12],axis=1))*np.ones((9,9))).T
 
         self.legal_move *= fu_legal
 
@@ -206,11 +206,11 @@ class KYO(Piece):
         move = self.move_dict[self.name].copy()
 
         if self.name == "NY":
-            positions = np.sum(banmen[self.owner], axis=0)
+            positions = np.sum(banmen[self.owner], axis=0,dtype=int)
 
             if self.owner:
                 move = move[::-1,::-1]
-                s_positions_board, g_positions_board = g_positions_board, s_positions_board
+                # s_positions_board, g_positions_board = g_positions_board, s_positions_board
 
             self.legal_move = move[9-self.position[0]:18-self.position[0], 9-self.position[1]:18-self.position[1]]
             self.legal_move *= 1 - positions
@@ -375,11 +375,11 @@ class Board:
         p = self.get_piece(self.pieces, self.turn, name, start)
 
         target = self.get_piece_banmen(self.pieces, goal)
-        print(target)
+        # print(target)
         if target is not None:
-            print(target.owner)
+            # print(target.owner)
             target.captured()
-            print(target.owner)
+            # print(target.owner)
 
         if name !=p.name:
             p.name = p.promote_name
@@ -506,21 +506,25 @@ class Board:
         banmen_out = []
         komadai_out = []
         for i,mv in enumerate(move_data):
-            print(i)
+            # print(i)
             # print(mv)
             self.board_data()
-            start = [int(mv[0]),int(mv[1])]
-            goal = [int(mv[2]),int(mv[3])]
+            start = (int(mv[0]),int(mv[1]))
+            goal = (int(mv[2]),int(mv[3]))
             name = mv[4:6]
             # self.board_data()
             moves = self.get_legal_moves()
+        
             komadai_move = np.zeros([len(moves), 2, 2, 14])
             banmen_move = np.zeros([len(moves), 2, 2, 14, 9, 9])
             komadai_move[:,0,...] = self.komadai
             banmen_move[:,0,...] = self.banmen
 
+
+
             for j,m in enumerate(moves):
                 banmen_tmp,komadai_tmp = self.move_data_tmp(start=(int(m[0]),int(m[1])),goal=(int(m[2]),int(m[3])),name=m[4:6])
+                
                 komadai_move[j,1,...] = komadai_tmp
                 banmen_move[j,1,...] = banmen_tmp
             # print(aa.shape)
@@ -529,6 +533,7 @@ class Board:
                 banmen_move = banmen_move[:, ::-1, :, :, ::-1, ::-1]
                 # aa[:,:,:,:] = aa[:,:,:,::-1]
             # print(moves)
+            # if i==24: raise ValueError
             if not (np.array(moves) == mv[0:6]).any():
                 raise ValueError
             good.append((np.array(moves) == mv[0:6]))
@@ -536,12 +541,13 @@ class Board:
             banmen_out.append(banmen_tmp)
 
             # print(self.banmen.sum(axis=(0,1)))
-            print(self.komadai)
-            print(self.turn)
-            print(mv)
+            # print(self.komadai)
+            # print(self.turn)
+            # print(mv)
             self.move(start, goal, name)
-
+            
             self.turn = 1- self.turn
+
 
         komadai_out = np.concatenate(komadai_out,axis=0)
         banem_out = np.concatenate(banmen_out,axis=0)
