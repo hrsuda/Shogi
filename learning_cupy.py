@@ -404,3 +404,89 @@ class NLayerNet(object):
 
 
         return grad
+
+
+class ShogiLayerNet(object):
+
+    def __init__(self, input_size, hidden_size_list, output_size, weight_init_std=0.1):
+        self.device = "gpu"
+        self.W_params = []
+        self.b_params = []
+        w = weight_init_std * cp.random.randn(input_size, hidden_size_list[0])
+        b = weight_init_std * cp.random.randn(hidden_size_list[0])
+        self.layers = []
+
+
+        N = len(hidden_size_list)
+        self.W_params.append(w)
+        self.b_params.append(b)
+        self.layers.append(Affine(w,b))
+        self.layers.append(Relu())
+
+        for n in range(0,N-1):
+            w = weight_init_std * cp.random.randn(hidden_size_list[n], hidden_size_list[n+1])
+            b = weight_init_std * cp.random.randn(hidden_size_list[n+1])
+
+            self.W_params.append(w)
+            self.b_params.append(b)
+            self.layers.append(Affine(w,b))
+            self.layers.append(Sigmoid())
+
+        w = weight_init_std * cp.random.randn(hidden_size_list[N-1], output_size)
+        b = weight_init_std * cp.random.randn(output_size)
+        self.W_params.append(w)
+        self.b_params.append(b)
+        self.layers.append(Affine(w,b))
+
+
+
+        self.lastLayer = SigmoidWithLoss()
+
+    def predict(self, x):
+        x = cp.asarray(x)
+        for layer in self.layers:
+            x = layer.forward(x)
+
+        return x
+
+    def loss(self, x, t):
+        # x = cp.asarray(x)
+        t = cp.asarray(t)
+        y = self.predict(x)
+
+        return self.lastLayer.forward(y, t)
+
+    def accuracy(self, x, t):
+        t = cp.asarray(t)
+        y = self.predict(x)
+        y = sigmoid(y)[:,0]
+        y = y>0.5
+        print(y.shape)
+        print(t.shape)
+        # print(np.where(y[0]==t))
+        # y = np.argmax(y, axis=1)
+        # if t.ndim != 1:t = np.argmax(t, axis=1)
+        accuracy = cp.sum(y==t) / float(len(t))
+        return accuracy
+
+    def gradient(self, x, t):
+        self.loss(x, t)
+
+        dout = 1
+        dout = self.lastLayer.backward(dout)
+
+        layers = list(self.layers)
+        layers.reverse()
+
+        for layer in layers:
+            dout = layer.backward(dout)
+
+        grad = []
+        for layer in self.layers[::2]:
+            g = [layer.dW, layer.db]
+            grad.append(g)
+
+
+        return grad
+
+
