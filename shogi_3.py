@@ -517,28 +517,28 @@ class Board:
         
             komadai_move = np.zeros([len(moves), 2, 2, 14])
             banmen_move = np.zeros([len(moves), 2, 2, 14, 9, 9])
-            komadai_move[:,0,...] = self.komadai
-            banmen_move[:,0,...] = self.banmen
+            komadai_move[:,0,...] = self.komadai.copy()
+            banmen_move[:,0,...] = self.banmen.copy()
 
 
 
             for j,m in enumerate(moves):
                 banmen_tmp,komadai_tmp = self.move_data_tmp(start=(int(m[0]),int(m[1])),goal=(int(m[2]),int(m[3])),name=m[4:6])
                 
-                komadai_move[j,1,...] = komadai_tmp
-                banmen_move[j,1,...] = banmen_tmp
+                komadai_move[j,1,...] = komadai_tmp.copy()
+                banmen_move[j,1,...] = banmen_tmp.copy()
             # print(aa.shape)
             if i % 2==1:
-                komadai_move = komadai_move[:, ::-1, :]
-                banmen_move = banmen_move[:, ::-1, :, :, ::-1, ::-1]
+                komadai_move = komadai_move[:, :, ::-1, :]
+                banmen_move = banmen_move[:, :, ::-1, :, ::-1, ::-1]
                 # aa[:,:,:,:] = aa[:,:,:,::-1]
             # print(moves)
             # if i==24: raise ValueError
             if not (np.array(moves) == mv[0:6]).any():
                 raise ValueError
             good.append((np.array(moves) == mv[0:6]))
-            komadai_out.append(komadai_tmp)
-            banmen_out.append(banmen_tmp)
+            komadai_out.append(komadai_move)
+            banmen_out.append(banmen_move)
 
             # print(self.banmen.sum(axis=(0,1)))
             # print(self.komadai)
@@ -550,14 +550,14 @@ class Board:
 
 
         komadai_out = np.concatenate(komadai_out,axis=0)
-        banem_out = np.concatenate(banmen_out,axis=0)
+        banmen_out = np.concatenate(banmen_out,axis=0)
         good = np.concatenate(good,axis=0)
         print(filename)
         # print(out.shape)
         return banmen_out, komadai_out, good
 
 
-    def read_file_player(self, filename, playername ):
+    def read_file_player(self, filename, playername):
         # data = pf.read_csv(filename, comment="'", header=hoge)
 
         _ = files.read_csa_file(filename)

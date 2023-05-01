@@ -2,11 +2,11 @@ import numpy as np
 import scipy as sp
 from collections import OrderedDict
 
-import cupy as cp
+# import cupy as cp
 
 def softmax(x):
-    x = x - cp.max(x, axis=-1, keepdims=True)   # オーバーフロー対策
-    x = cp.exp(x) / cp.sum(cp.exp(x), axis=-1, keepdims=True)
+    x = x - np.max(x, axis=-1, keepdims=True)   # オーバーフロー対策
+    x = np.exp(x) / np.sum(np.exp(x), axis=-1, keepdims=True)
 
     return x
 
@@ -17,7 +17,7 @@ def cross_entropy_error(y, t):
         y = y.reshape(1, y.size)
 
     batch_size = y.shape[0]
-    return -cp.sum(t * cp.log(y + 1e-12)) / batch_size
+    return -np.sum(t * np.log(y + 1e-12)) / batch_size
 
 
 
@@ -26,13 +26,13 @@ def sum_squared_error(y, t):
         t = t.reshape(1, t.size) #1d->2d
         y = y.reshape(1, y.size)
     batch_size = y.shape[0]
-    return 0.5 * cp.sum(y-t)**2 / batch_size
+    return 0.5 * np.sum(y-t)**2 / batch_size
 
 
 def sigmoid(x):
 
     # x = x - np.min(x, axis=-1, keepdims=True)
-    out = 1. / (1. + cp.exp(-x))
+    out = 1. / (1. + np.exp(-x))
     return out
 
 def im2col(input_data, filter_h, filter_w, stride=1, pad=0):
@@ -40,8 +40,8 @@ def im2col(input_data, filter_h, filter_w, stride=1, pad=0):
     out_h = (H + 2*pad - filter_h)//stride + 1
     out_w = (W + 2*pad - filter_w)//stride + 1
 
-    img = cp.pad(input_data, [(0,0), (0,0), (pad, pad), (pad, pad)], 'constant')
-    col = cp.zeros((N, C,filter_h, filter_w, out_h, out_w))
+    img = np.pad(input_data, [(0,0), (0,0), (pad, pad), (pad, pad)], 'constant')
+    col = np.zeros((N, C,filter_h, filter_w, out_h, out_w))
 
     for y in range(filter_h):
         y_max = y + stride*out_h
@@ -57,8 +57,8 @@ def im2col_alpha(input_data, filter_h, filter_w, filter_positions, stride=1, pad
     out_h = (H + 2*pad - filter_h)//stride + 1
     out_w = (W + 2*pad - filter_w)//stride + 1
 
-    img = cp.pad(input_data, [(0,0), (0,0), (pad, pad), (pad, pad)], 'constant')
-    col = cp.zeros((N, C, len(filter_positions[0]), out_h, out_w))
+    img = np.pad(input_data, [(0,0), (0,0), (pad, pad), (pad, pad)], 'constant')
+    col = np.zeros((N, C, len(filter_positions[0]), out_h, out_w))
 
     for i,p in enumerate(filter_positions):
         x = p[0]
@@ -94,7 +94,7 @@ def col2im(col, input_shape, filter_h, filter_w, stride=1, pad=0):
     col = col.reshape(N, out_h, out_w, C, filter_h, filter_w).transpose(0, 3, 4, 5, 1, 2)
 
 
-    img = cp.zeros((N, C, H + 2*pad + stride - 1, W + 2*pad + stride - 1))
+    img = np.zeros((N, C, H + 2*pad + stride - 1, W + 2*pad + stride - 1))
     for y in range(filter_h):
         y_max = y + stride*out_h
         for x in range(filter_w):
@@ -126,7 +126,7 @@ def col2im_alpha(col, input_shape, filter_h, filter_w, filter_positions, stride=
     col = col.reshape(N, out_h, out_w, C, len(filter_positions[0])).transpose(0, 3, 4, 1, 2)
 
 
-    img = cp.zeros((N, C, H + 2*pad + stride - 1, W + 2*pad + stride - 1))
+    img = np.zeros((N, C, H + 2*pad + stride - 1, W + 2*pad + stride - 1))
     for i,p in enumerate(filter_positions):
         x = p[0]
         y = p[1]
@@ -171,8 +171,8 @@ class Sigmoid(object):
         self.out = None
 
     def forward(self, x):
-        # x = x - cp.max(x, axis=-1, keepdims=True)
-        out = 1. / (1. + cp.exp(-x))
+        # x = x - np.max(x, axis=-1, keepdims=True)
+        out = 1. / (1. + np.exp(-x))
         self.out = out
         return out
     def backward(self, dout):
@@ -217,14 +217,14 @@ class Affine:
         x = x.reshape(x.shape[0], -1)
         self.x = x
 
-        out = cp.dot(self.x, self.W) + self.b
+        out = np.dot(self.x, self.W) + self.b
 
         return out
 
     def backward(self, dout):
-        dx = cp.dot(dout, self.W.T)
-        self.dW = cp.dot(self.x.T, dout)
-        self.db = cp.sum(dout, axis=0)
+        dx = np.dot(dout, self.W.T)
+        self.dW = np.dot(self.x.T, dout)
+        self.db = np.sum(dout, axis=0)
 
         dx = dx.reshape(*self.original_x_shape)  # 入力データの形状に戻す（テンソル対応）
         return dx
@@ -258,7 +258,7 @@ class Convolution:
         col = im2col(x, FH, FW, self.stride, self.pad)
         col_W = self.W.reshape(FN, -1).T
 
-        out = cp.dot(col, col_W) + self.b
+        out = np.dot(col, col_W) + self.b
         out = out.reshape(N, out_h, out_w, -1).transpose(0, 3, 1, 2)
 
         self.x = x
@@ -273,11 +273,11 @@ class Convolution:
         C, FH, FW = self.W.shape
         dout = dout.transpose(0,2,3,1).reshape(-1, FN)
 
-        self.db = cp.sum(dout, axis=0)
-        self.dW = cp.dot(self.col.T, dout)
+        self.db = np.sum(dout, axis=0)
+        self.dW = np.dot(self.col.T, dout)
         self.dW = self.dW.transpose(1, 0).reshape(FN, C, FH, FW)
 
-        dcol = cp.dot(dout, self.col_W.T)
+        dcol = np.dot(dout, self.col_W.T)
         dx = col2im(dcol, self.x.shape, FH, FW, self.stride, self.pad)
 
         return dx
@@ -313,7 +313,7 @@ class Convolution_alpha:
         col = im2col_alpha(x, FH, FW, self.filter_positions, self.stride, self.pad)
         col_W = self.W.reshape(FN, -1).T
 
-        out = cp.dot(col, col_W) + self.b
+        out = np.dot(col, col_W) + self.b
         out = out.reshape(N, out_h, out_w, -1).transpose(0, 3, 1, 2)
 
         self.x = x
@@ -332,14 +332,14 @@ class Convolution_alpha:
 
         dout = dout.transpose(0,2,3,1).reshape(-1,1)
 
-        self.db = cp.sum(dout, axis=0)
-        self.dW = cp.dot(self.col.T, dout)
+        self.db = np.sum(dout, axis=0)
+        self.dW = np.dot(self.col.T, dout)
         # print(self.dW.shape)
         # print(dout.shape)
 
         self.dW = self.dW.transpose(1, 0).reshape(-1,FN*C*len(self.filter_positions[0]))
 
-        dcol = cp.dot(dout, self.col_W.T)
+        dcol = np.dot(dout, self.col_W.T)
         dx = col2im_alpha(dcol, self.x.shape, FH, FW, self.filter_positions, self.stride, self.pad)
 
         return dx
@@ -364,14 +364,14 @@ class Combine:
         x = x.reshape(x.shape[0], -1)
         self.x = x
 
-        out = cp.dot(self.x, self.W) + self.b
+        out = np.dot(self.x, self.W) + self.b
 
         return out
 
     def backward(self, dout):
-        dx = cp.dot(dout, self.W.T)
-        self.dW = cp.dot(self.x.T, dout)
-        self.db = cp.sum(dout, axis=0)
+        dx = np.dot(dout, self.W.T)
+        self.dW = np.dot(self.x.T, dout)
+        self.db = np.sum(dout, axis=0)
 
         dx = dx.reshape(*self.original_x_shape)  # 入力データの形状に戻す（テンソル対応）
         return dx
@@ -399,8 +399,8 @@ class Pooling:
         col = im2col(x, self.pool_h, self.pool_w, self.stride, self.pad)
         col = col.reshape(-1, self.pool_h*self.pool_w)
 
-        arg_max = cp.argmax(col, axis=1)
-        out = cp.max(col, axis=1)
+        arg_max = np.argmax(col, axis=1)
+        out = np.max(col, axis=1)
         out = out.reshape(N, out_h, out_w, C).transpose(0, 3, 1, 2)
 
         self.x = x
@@ -412,12 +412,12 @@ class Pooling:
         dout = dout.transpose(0, 2, 3, 1)
 
         pool_size = self.pool_h * self.pool_w
-        dmax = cp.zeros((dout.size, pool_size))
-        dmax[cp.arange(self.arg_max.size), self.arg_max.flatten()] = dout.flatten()
+        dmax = np.zeros((dout.size, pool_size))
+        dmax[np.arange(self.arg_max.size), self.arg_max.flatten()] = dout.flatten()
         dmax = dmax.reshape(dout.shape + (pool_size,))
 
         dcol = dmax.reshape(dmax.shape[0] * dmax.shape[1] * dmax.shape[2], -1)
-        dx = cp.col2im(dcol, self.x.shape, self.pool_h, self.pool_w, self.stride, self.pad)
+        dx = np.col2im(dcol, self.x.shape, self.pool_h, self.pool_w, self.stride, self.pad)
 
         return dx
 
@@ -481,10 +481,10 @@ class TwoLayerNet(object):
     def __init__(self, input_size, hidden_size, output_size, weight_init_std=0.1):
 
         self.params = {}
-        self.params["W1"] = weight_init_std * cp.random.randn(input_size, hidden_size)
-        self.params["b1"] = cp.random.randn(hidden_size)+2
+        self.params["W1"] = weight_init_std * np.random.randn(input_size, hidden_size)
+        self.params["b1"] = np.random.randn(hidden_size)+2
         self.params["W2"] = weight_init_std * np.random.randn(hidden_size, output_size)
-        self.params["b2"] = cp.random.randn(output_size)+2
+        self.params["b2"] = np.random.randn(output_size)+2
 
 
         self.layers = OrderedDict()
@@ -508,10 +508,10 @@ class TwoLayerNet(object):
 
     def accuracy(self, x, t):
         y = self.predict(x)
-        y = cp.argmax(y, axis=1)
-        if t.ndim != 1: t = cp.argmax(t, axis=1)
+        y = np.argmax(y, axis=1)
+        if t.ndim != 1: t = np.argmax(t, axis=1)
 
-        accuracy = cp.sum(y==t)/float(t.shape[0])
+        accuracy = np.sum(y==t)/float(t.shape[0])
 
         return accuracy
 
@@ -542,8 +542,8 @@ class NLayerNet(object):
         self.device = "gpu"
         self.W_params = []
         self.b_params = []
-        w = weight_init_std * cp.random.randn(input_size, hidden_size_list[0])
-        b = weight_init_std * cp.random.randn(hidden_size_list[0])
+        w = weight_init_std * np.random.randn(input_size, hidden_size_list[0])
+        b = weight_init_std * np.random.randn(hidden_size_list[0])
         self.layers = []
 
 
@@ -554,16 +554,16 @@ class NLayerNet(object):
         self.layers.append(Relu())
 
         for n in range(0,N-1):
-            w = weight_init_std * cp.random.randn(hidden_size_list[n], hidden_size_list[n+1])
-            b = weight_init_std * cp.random.randn(hidden_size_list[n+1])
+            w = weight_init_std * np.random.randn(hidden_size_list[n], hidden_size_list[n+1])
+            b = weight_init_std * np.random.randn(hidden_size_list[n+1])
 
             self.W_params.append(w)
             self.b_params.append(b)
             self.layers.append(Affine(w,b))
             self.layers.append(Sigmoid())
 
-        w = weight_init_std * cp.random.randn(hidden_size_list[N-1], output_size)
-        b = weight_init_std * cp.random.randn(output_size)
+        w = weight_init_std * np.random.randn(hidden_size_list[N-1], output_size)
+        b = weight_init_std * np.random.randn(output_size)
         self.W_params.append(w)
         self.b_params.append(b)
         self.layers.append(Affine(w,b))
@@ -573,21 +573,21 @@ class NLayerNet(object):
         self.lastLayer = SigmoidWithLoss()
 
     def predict(self, x):
-        x = cp.asarray(x)
+        x = np.asarray(x)
         for layer in self.layers:
             x = layer.forward(x)
 
         return x
 
     def loss(self, x, t):
-        # x = cp.asarray(x)
-        t = cp.asarray(t)
+        # x = np.asarray(x)
+        t = np.asarray(t)
         y = self.predict(x)
 
         return self.lastLayer.forward(y, t)
 
     def accuracy(self, x, t):
-        t = cp.asarray(t)
+        t = np.asarray(t)
         y = self.predict(x)
         y = sigmoid(y)[:,0]
         y = y>0.5
@@ -596,7 +596,7 @@ class NLayerNet(object):
         # print(np.where(y[0]==t))
         # y = np.argmax(y, axis=1)
         # if t.ndim != 1:t = np.argmax(t, axis=1)
-        accuracy = cp.sum(y==t) / float(len(t))
+        accuracy = np.sum(y==t) / float(len(t))
         return accuracy
 
     def gradient(self, x, t):
@@ -628,20 +628,20 @@ class ShogiLayerNet(object):
         self.b_params = []
         self.layers = []
         
-        self.filter_positions_1 = cp.array([[8,8,8,8,8,8,8,8,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,8,8,8,8,8,8,8,8],
+        self.filter_positions_1 = np.array([[8,8,8,8,8,8,8,8,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,8,8,8,8,8,8,8,8],
                                             [0,1,2,3,4,5,6,7,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,9,10,11,12,13,14,15,16]])
-        self.filter_positions_2 = cp.array([[0,16,1,15,2,14,3,13,4,12,5,11,6,10,7,9,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15,0,16],
+        self.filter_positions_2 = np.array([[0,16,1,15,2,14,3,13,4,12,5,11,6,10,7,9,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15,0,16],
                                             [0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,9,9,10,10,11,11,12,12,13,13,14,14,15,15,16,16]])
 
-        w = weight_init_std * cp.random.randn(2*2*14*len(self.filter_positions_1[0]))
-        b = weight_init_std * cp.random.randn(1)
+        w = weight_init_std * np.random.randn(2*2*14*len(self.filter_positions_1[0]))
+        b = weight_init_std * np.random.randn(1)
         
         self.W_params.append(w)
         self.b_params.append(b)
         self.layers.append(Convolution_alpha( w, b, self.filter_positions_1, stride=1, pad=8))
 
-        w = weight_init_std * cp.random.randn(2*2*14*len(self.filter_positions_2[0]))
-        b = weight_init_std * cp.random.randn(1)
+        w = weight_init_std * np.random.randn(2*2*14*len(self.filter_positions_2[0]))
+        b = weight_init_std * np.random.randn(1)
 
         # print(len(self.filter_positions_2[0]))
         
@@ -649,8 +649,8 @@ class ShogiLayerNet(object):
         self.b_params.append(b)
         self.layers.append(Convolution_alpha( w, b, self.filter_positions_2, stride=1, pad=8))
 
-        w = weight_init_std * cp.random.randn(2*2*14,3,3)
-        b = weight_init_std * cp.random.randn(1)
+        w = weight_init_std * np.random.randn(2*2*14,3,3)
+        b = weight_init_std * np.random.randn(1)
         
         self.W_params.append(w)
         self.b_params.append(b)
@@ -658,8 +658,8 @@ class ShogiLayerNet(object):
 
 
 
-        w = weight_init_std * cp.random.randn(81+81+81+14*2*2, 1)
-        b = weight_init_std * cp.random.randn(1)
+        w = weight_init_std * np.random.randn(81+81+81+14*2*2, 1)
+        b = weight_init_std * np.random.randn(1)
         self.W_params.append(w)
         self.b_params.append(b)
         self.layers.append(Affine(w,b))
@@ -675,21 +675,21 @@ class ShogiLayerNet(object):
         x2 = self.layers[1].forward(x_a).reshape([-1,81])
         x3 = self.layers[2].forward(x_a).reshape([-1,81])
 
-        x = cp.concatenate([x1,x2,x3,x_b],axis=1)
+        x = np.concatenate([x1,x2,x3,x_b],axis=1)
 
         x = self.layers[3].forward(x)
 
         return x
 
     def loss(self, x, t):
-        # x = cp.asarray(x)
-        # t = cp.asarray(t)
+        # x = np.asarray(x)
+        # t = np.asarray(t)
         y = self.predict(x)
 
         return self.lastLayer.forward(y, t)
 
     def accuracy(self, x, t):
-        # t = cp.asarray(t)
+        # t = np.asarray(t)
         y = self.predict(x)
         y = sigmoid(y)[:,0]
         y = y>0.5
@@ -732,24 +732,24 @@ class ShogiLayerNet2(object):
         self.b_params = []
         self.layers = []
         
-        self.filter_positions_1 = cp.array([[8,8,8,8,8,8,8,8,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,8,8,8,8,8,8,8,8],
+        self.filter_positions_1 = np.array([[8,8,8,8,8,8,8,8,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,8,8,8,8,8,8,8,8],
                                             [0,1,2,3,4,5,6,7,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,9,10,11,12,13,14,15,16]])
-        self.filter_positions_2 = cp.array([[0,16,1,15,2,14,3,13,4,12,5,11,6,10,7,9,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15,0,16],
+        self.filter_positions_2 = np.array([[0,16,1,15,2,14,3,13,4,12,5,11,6,10,7,9,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15,0,16],
                                             [0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,9,9,10,10,11,11,12,12,13,13,14,14,15,15,16,16]])
-        self.filter_positions_3 = cp.array([[6,6,8,10,10],
+        self.filter_positions_3 = np.array([[6,6,8,10,10],
                                             [7,9,8,7,9]])        
 
 #0 hisha 1
-        w = weight_init_std * cp.random.randn(2*2*14*len(self.filter_positions_1[0]))
-        b = weight_init_std * cp.random.randn(1)
+        w = weight_init_std * np.random.randn(2*2*14*len(self.filter_positions_1[0]))
+        b = weight_init_std * np.random.randn(1)
         
         self.W_params.append(w)
         self.b_params.append(b)
         self.layers.append(Convolution_alpha( w, b, self.filter_positions_1, stride=1, pad=8))
 
 #1 kaku 1
-        w = weight_init_std * cp.random.randn(2*2*14*len(self.filter_positions_2[0]))
-        b = weight_init_std * cp.random.randn(1)
+        w = weight_init_std * np.random.randn(2*2*14*len(self.filter_positions_2[0]))
+        b = weight_init_std * np.random.randn(1)
 
         # print(len(self.filter_positions_2[0]))
         
@@ -759,8 +759,8 @@ class ShogiLayerNet2(object):
         self.layers.append(Convolution_alpha( w, b, self.filter_positions_2, stride=1, pad=8))
 
 #2 keima 1
-        w = weight_init_std * cp.random.randn(2*2*14*len(self.filter_positions_3[0]))
-        b = weight_init_std * cp.random.randn(1)
+        w = weight_init_std * np.random.randn(2*2*14*len(self.filter_positions_3[0]))
+        b = weight_init_std * np.random.randn(1)
 
         # print(len(self.filter_positions_2[0]))
         
@@ -769,31 +769,31 @@ class ShogiLayerNet2(object):
         self.layers.append(Convolution_alpha( w, b, self.filter_positions_3, stride=1, pad=8))
 
 #3 sonota 1
-        w = weight_init_std * cp.random.randn(2*2*14,3,3)
-        b = weight_init_std * cp.random.randn(1)
+        w = weight_init_std * np.random.randn(2*2*14,3,3)
+        b = weight_init_std * np.random.randn(1)
         
         self.W_params.append(w)
         self.b_params.append(b)
         self.layers.append(Convolution( w, b, stride=1, pad=1))
 
 #4 Last 1
-        w = weight_init_std * cp.random.randn(81+81+81+81+14*2*2, 100)
-        b = weight_init_std * cp.random.randn(100)
+        w = weight_init_std * np.random.randn(81+81+81+81+14*2*2, 100)
+        b = weight_init_std * np.random.randn(100)
         self.W_params.append(w)
         self.b_params.append(b)
         self.layers.append(Affine(w,b))
 
 #5 hisha 2
-        w = weight_init_std * cp.random.randn(4*len(self.filter_positions_1[0]))
-        b = weight_init_std * cp.random.randn(1)
+        w = weight_init_std * np.random.randn(4*len(self.filter_positions_1[0]))
+        b = weight_init_std * np.random.randn(1)
         
         self.W_params.append(w)
         self.b_params.append(b)
         self.layers.append(Convolution_alpha( w, b, self.filter_positions_1, stride=1, pad=8))
 
 #6 kaku 2
-        w = weight_init_std * cp.random.randn(4*len(self.filter_positions_2[0]))
-        b = weight_init_std * cp.random.randn(1)
+        w = weight_init_std * np.random.randn(4*len(self.filter_positions_2[0]))
+        b = weight_init_std * np.random.randn(1)
 
         # print(len(self.filter_positions_2[0]))
         
@@ -802,8 +802,8 @@ class ShogiLayerNet2(object):
         self.layers.append(Convolution_alpha( w, b, self.filter_positions_2, stride=1, pad=8))
 
 #7 keima 2
-        w = weight_init_std * cp.random.randn(4*len(self.filter_positions_3[0]))
-        b = weight_init_std * cp.random.randn(1)
+        w = weight_init_std * np.random.randn(4*len(self.filter_positions_3[0]))
+        b = weight_init_std * np.random.randn(1)
 
         # print(len(self.filter_positions_2[0]))
         
@@ -812,8 +812,8 @@ class ShogiLayerNet2(object):
         self.layers.append(Convolution_alpha( w, b, self.filter_positions_3, stride=1, pad=8))
 
 #8 sonota 2
-        w = weight_init_std * cp.random.randn(4,3,3)
-        b = weight_init_std * cp.random.randn(1)
+        w = weight_init_std * np.random.randn(4,3,3)
+        b = weight_init_std * np.random.randn(1)
         
         self.W_params.append(w)
         self.b_params.append(b)
@@ -822,8 +822,8 @@ class ShogiLayerNet2(object):
 
 
 #9 Last 2
-        w = weight_init_std * cp.random.randn(81+81+81+81+100, 1)
-        b = weight_init_std * cp.random.randn(1)
+        w = weight_init_std * np.random.randn(81+81+81+81+100, 1)
+        b = weight_init_std * np.random.randn(1)
         self.W_params.append(w)
         self.b_params.append(b)
         self.layers.append(Affine(w,b))
@@ -839,9 +839,9 @@ class ShogiLayerNet2(object):
         x2 = self.layers[1].forward(x_a).reshape([-1,81])
         x3 = self.layers[2].forward(x_a).reshape([-1,81])
         x4 = self.layers[3].forward(x_a).reshape([-1,81])
-        x = cp.concatenate([x1,x2,x3,x4,x_b],axis=1)
+        x = np.concatenate([x1,x2,x3,x4,x_b],axis=1)
         x = self.layers[4].forward(x)
-        x_1234 = cp.array([x1,x2,x3,x4]).reshape([-1,4,9,9])
+        x_1234 = np.array([x1,x2,x3,x4]).reshape([-1,4,9,9])
         x5 = self.layers[5].forward(x_1234).reshape([-1,81])
         x6 = self.layers[6].forward(x_1234).reshape([-1,81])
         x7 = self.layers[7].forward(x_1234).reshape([-1,81])
@@ -849,21 +849,21 @@ class ShogiLayerNet2(object):
 
 
 
-        x = cp.concatenate([x5,x6,x7,x8,x],axis=1)
+        x = np.concatenate([x5,x6,x7,x8,x],axis=1)
 
         x = self.layers[9].forward(x)
 
         return x
 
     def loss(self, x, t):
-        # x = cp.asarray(x)
-        # t = cp.asarray(t)
+        # x = np.asarray(x)
+        # t = np.asarray(t)
         y = self.predict(x)
 
         return self.lastLayer.forward(y, t)
 
     def accuracy(self, x, t):
-        # t = cp.asarray(t)
+        # t = np.asarray(t)
         y = self.predict(x)
         y = sigmoid(y)[:,0]
         y = y>0.5
@@ -890,7 +890,7 @@ class ShogiLayerNet2(object):
 
         dout = self.layers[4].backward(dout[:,324:424])
 
-        dout6789 = cp.sum(cp.array([dout6,dout7,dout8,dout9]),axis=0)
+        dout6789 = np.sum(np.array([dout6,dout7,dout8,dout9]),axis=0)
         
         self.layers[3].backward(dout[:,243:324].reshape([1,-1,9,9]) + dout6789[:,3,:,:])
         self.layers[2].backward(dout[:,162:243].reshape([1,-1,9,9]) + dout6789[:,2,:,:])

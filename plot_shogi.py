@@ -42,6 +42,36 @@ def plot_board(pieces, language="japanese"):
     ax.set_aspect(1)
     return ax
 
+def plot_board_alpha(pieces, language="japanese"):
+    if language =="japanese":
+        rcParams['font.family'] = 'sans-serif'
+        rcParams['font.sans-serif'] = ['Hiragino Maru Gothic Pro', 'Yu Gothic', 'Meirio', 'Takao', 'IPAexGothic', 'IPAPGothic', 'VL PGothic', 'Noto Sans CJK JP']
+
+    x = np.arange(0,10) + 0.5
+    y = np.arange(0,10) + 0.5
+    ax = plt.subplot(111)
+    ax.invert_xaxis()
+    ax.invert_yaxis()
+
+    ax.hlines(y,x.min(),x.max())
+    ax.vlines(x, y.min(), y.max())
+    komadai_count =[0,0]
+    for p in pieces:
+        # print(p.name)
+        position = np.array(p.position)
+        # print(position)
+        if position[0] == 0:
+            xx = 13 * p.owner - 1
+            yy = 1 + 0.5 * komadai_count[p.owner]
+            ax.text(xx, yy, names_dict[p.name])
+            komadai_count[p.owner] += 1
+        else:
+            xx = x[position[0]-1] + 0.8
+            yy = y[position[1]-1] + 0.5
+            ax.text(xx, yy, names_dict[p.name], rotation=180*(p.owner))
+
+    ax.set_aspect(1)
+    return ax
 
 def plot_board_from_data(data, language="japanese"):
     if language =="japanese":
