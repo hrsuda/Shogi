@@ -17,8 +17,8 @@ def main():
     output2 = []
 
     out_0 = None
-    for i,fname in enumerate(file_names):
 
+    for i,fname in enumerate(file_names):
         with open("init_posision.pkl", "rb") as f:
             pieces = pickle.load(f)
         B = Board(pieces)

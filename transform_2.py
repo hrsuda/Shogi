@@ -18,8 +18,9 @@ def main():
     output_g = []
 
     out_0 = None
-    for i,fname in enumerate(file_names):
 
+    for i,fname in enumerate(file_names):
+        if i > 1000:break
         with open("init_posision.pkl", "rb") as f:
             pieces = pickle.load(f)
         B = Board(pieces)
@@ -29,7 +30,8 @@ def main():
         if out is None:continue
         banmen, komadai, good = out
         print(np.where(good))
-        #
+
+                  #
         output_b.append(banmen)
         output_k.append(komadai)
         output_g.append(good)
@@ -52,14 +54,14 @@ def main():
 
 
 
-    output_b = np.concatenate(output_b, axis=0)
-    output_k = np.concatenate(output_k, axis=0)
-    output_g = np.concatenate(output_g, axis=0)
+    output_b_np = np.concatenate(output_b, axis=0)
+    output_k_np = np.concatenate(output_k, axis=0)
+    output_g_np = np.concatenate(output_g, axis=0)
     # print(np.array(output).shape)
 
-    np.savez_compressed(out_filename + str(i)+"_k", output_k.astype(np.int8))
-    np.savez_compressed(out_filename + str(i)+"_b", output_b.astype(np.int8))
-    np.savez_compressed(out_filename + str(i) +'_t', output_g.astype(np.int8))
+    np.savez_compressed(out_filename + str(i)+"_k", output_k_np.astype(np.int8))
+    np.savez_compressed(out_filename + str(i)+"_b", output_b_np.astype(np.int8))
+    np.savez_compressed(out_filename + str(i) +'_t', output_g_np.astype(np.int8))
 
 # def main():
 #     init_position.main()

@@ -2,6 +2,7 @@ import pickle
 
 from shogi_3 import *
 
+
 def main():
     pieces = [OU(init_position=(5,9), owner=0),
            OU(init_position=(5,1), owner=1),

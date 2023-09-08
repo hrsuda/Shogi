@@ -35,6 +35,7 @@ def main():
 
 
 
+
     args = parser.parse_args()
 
     input_path = args.input_path
@@ -61,23 +62,23 @@ def main():
         data_k = []
         data_t = []
         print(filelist)
-        for f in filelist:
+        for f in filelist[:30]:
             if f[-6:]=="_b.npy":
-                data_b.append(np.load(input_path))
-                data_k.append(np.load(input_path.replace("_b.npy","_k.npy")))
-                data_t.append(np.load(input_path.replace("_b.npy","_t.npy")))
-            elif f[-6:]=="_t.npz":
-                data_b.append(np.load(input_path, allow_pickle=True)["arr_0"])
-                data_k.append(np.load(input_path.replace("_b.npz","_k.npz"), allow_pickle=True)["arr_0"])
-                data_t.append(np.load(input_path.replace("_b.npz","_t.npz"), allow_pickle=True)["arr_0"])
+                data_b.append(np.load(f))
+                data_k.append(np.load(f.replace("_b.npy","_k.npy")))
+                data_t.append(np.load(f.replace("_b.npy","_t.npy")))
+            elif f[-6:]=="_b.npz":
+                data_b.append(np.load(f, allow_pickle=True)["arr_0"])
+                data_k.append(np.load(f.replace("_b.npz","_k.npz"), allow_pickle=True)["arr_0"])
+                data_t.append(np.load(f.replace("_b.npz","_t.npz"), allow_pickle=True)["arr_0"])
         
         data_b = np.concatenate(data_b,axis=0)
         data_k = np.concatenate(data_k,axis=0)
         data_t = np.concatenate(data_t,axis=0)
 
-    data_b = cp.asarray(data_b)
-    data_k = cp.asarray(data_k)
-    data_t = cp.asarray(data_t)
+    # data_b = cp.asarray(data_b)
+    # data_k = cp.asarray(data_k)
+    # data_t = cp.asarray(data_t)
 
     # data = data.astype(float)
     test_ind = np.random.choice(len(data_b), test_len)
@@ -89,26 +90,32 @@ def main():
     x_data_k = data_k[~test_mask]
     # t_data = t_bool
     t_data = data_t.astype(int)[~test_mask]
-    x_data_b_good = x_data_b[t_data]
-    x_data_k_good = x_data_k[t_data]
-    t_data_good = t_data[t_data]
-    x_data_b_bad = x_data_b[~t_data]
-    x_data_k_bad = x_data_k[~t_data]
-    t_data_bad = t_data[~t_data]
+    t_bool = t_data.astype(bool)
+    x_data_b_good = x_data_b[t_bool]
+    x_data_k_good = x_data_k[t_bool]
+    t_data_good = t_data[t_bool]
+    x_data_b_bad = x_data_b[~t_bool]
+    x_data_k_bad = x_data_k[~t_bool]
+    t_data_bad = t_data[~t_bool]
+    print(len(t_data_good))
+    print(len(t_data_bad))
 
 
 
 
     x_test_b = data_b[test_mask]
     x_test_k = data_k[test_mask]
+    x_test_b = cp.asarray(x_test_b)
+    x_test_k = cp.asarray(x_test_k)
 
     x_test = [x_test_b, x_test_k] 
     
     # t_test = t_bool[test_mask]
     t_test = data_t[test_mask]
+    t_test = cp.asarray(t_test)
     # print(data[0])
     if args.network is None:
-        network = ShogiLayerNet2(weight_init_std=0.3)
+        network = ShogiLayerNet2(weight_init_std=5e1)
     else:
         with open(args.network, "rb") as f:
             network = pickle.load(f)
@@ -118,47 +125,80 @@ def main():
 
     train_loss_list = []
     train_acc_list = []
-
-    iter_per_epoch = max(data_size // batch_size, 1)
+    test_loss_list = []
+    iter_per_epoch = max(data_size // batch_size, 1e3)
     print(iter_per_epoch)
-    alpha = 1.0/4
-
-
+    # alpha = 6/8
+    # good_size = int(batch_size * alpha)
+    length_good = len(x_data_b_good)
+    length_bad = len(x_data_b_bad)
     for i in range(iters_num):
+        good_size = np.random.randint(low = 1, high=batch_size-1)
+        # if i == 3:raise ValueError
 
         # batch_mask = np.random.choice(data_size, batch_size)
-        batch_mask_good = np.random.choice(len(x_data_b_good), int(batch_size*alpha))
-        batch_mask_bad = np.random.choice(len(x_data_b_bad), int(batch_size*(1-alpha)))
+        batch_mask_good = np.random.choice(length_good, good_size)
+        batch_mask_bad = np.random.choice(length_bad, batch_size-good_size)
 
         # x_batch = x_data[batch_mask]
         # t_batch = t_data[batch_mask]
-        x_batch_b = cp.concatenate([x_data_b_good[batch_mask_good], x_data_b_bad[batch_mask_bad]], axis=0)
-        x_batch_k = cp.concatenate([x_data_k_good[batch_mask_good], x_data_k_bad[batch_mask_bad]], axis=0)
+        x_batch_b = np.concatenate([ x_data_b_bad[batch_mask_bad], x_data_b_good[batch_mask_good]], axis=0)
+        x_batch_k = np.concatenate([ x_data_k_bad[batch_mask_bad],x_data_k_good[batch_mask_good]], axis=0)
+        x_batch_b = cp.asarray(x_batch_b)
+        x_batch_k = cp.asarray(x_batch_k)
         x_batch = [x_batch_b, x_batch_k]
-        t_batch = cp.concatenate([t_data_good[batch_mask_good], t_data_bad[batch_mask_bad]], axis=0)
-
-
-        grad_w, grad_b= network.gradient(x_batch, t_batch)
-
-        for j in range(len(grad_w)):
-            network.W_params[j] -= learning_rate * grad_w[j][0]
-            network.b_params[j] -= learning_rate * grad_b[j][0]
-
-
+        t_batch = np.concatenate([t_data_bad[batch_mask_bad],t_data_good[batch_mask_good]], axis=0)
+        t_batch = cp.asarray(t_batch)
 
         loss = network.loss(x_batch, t_batch)
+        grad_w, grad_b= network.gradient(x_batch, t_batch)
+
+        # print(i)
+        # np.array(grad_w)
+        if np.isnan(loss):
+            print(network.lastLayer.y)
+            print('retry')
+            continue
+
+        for j in range(len(grad_w)):
+            # print(grad_w[j].shape)
+            # if j in [5,11]:pass
+            # network.layers[j].W += learning_rate * grad_w[j][0]
+            # network.layers[j].b += learning_rate * grad_b[j][0]
+
+            network.W_params[j] -= learning_rate * grad_w[j]
+            network.b_params[j] -= learning_rate * grad_b[j]
+
+
+
+        
+        
+            
         # print(loss)
+
+
 
 
         train_loss_list.append(cp.asnumpy(loss).reshape(1))
 
-        if i % 1000 == 0:
+        if i % 500 == 0:
+            learning_rate = learning_rate * 7e-1
+            print(cp.sum((network.lastLayer.y>0.5)==network.lastLayer.t,dtype=float)/batch_size)
+            print(loss)
+            print(network.lastLayer.y)
+            print(network.lastLayer.t)
+            # print(cp.max(cp.array(grad_w)))
+            # print(cp.min(cp.array(grad_w)))
             train_acc = network.accuracy(x_test, t_test)
             train_acc_list.append(train_acc)
-
+            train_loss = network.loss(x_test, t_test)
+            test_loss_list.append(cp.asnumpy(train_loss))
             print(train_acc)
-            print(loss)
+            print(train_loss)
+            print(good_size)
+            # print(cp.sum((network.lastLayer.y>0.5)==network.lastLayer.t,dtype=float)/batch_size)
             # print(grad)
+            # break
 
     W_params = []
     b_params = []
@@ -175,9 +215,11 @@ def main():
 
     print(train_loss_list)
 
-    plt.plot(range(iters_num),np.concatenate(train_loss_list))
-
+    # plt.plot(range(iters_num),np.concatenate(train_loss_list))
+    plt.plot(test_loss_list)
     plt.yscale('log')
+    plt.grid()
+    plt.tight_layout()
     plt.savefig("hoge.pdf")
     # print(network.params)
     # np.save(out_name+"_W",np.concatenate(network.W_params))

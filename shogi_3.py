@@ -385,6 +385,13 @@ class Board:
             p.name = p.promote_name
         p.position = tuple(goal)
         # self.tu
+    def move_from_string(self, move):
+        start = (int(move[0]), int(move[1]))
+        goal = (int(move[2]), int(move[3]))
+        name = move[4:6]
+
+        self.move(start, goal, name)
+
 
     def clear(self):
         self.pieces = []
@@ -393,9 +400,10 @@ class Board:
     def board_from_data(self, banmen, komadai):
         self.clear()
         # self.board_data()
-        ind_banmen = np.where(banmen).T
-        ind_komadai = np.where(komadai).T
+        ind_banmen = np.array(np.where(banmen)).T
+        ind_komadai = np.array(np.where(komadai)).T
         for i in ind_banmen:
+            # print(i)
             self.pieces.append(self.piece_class[i[1]](init_position=(i[2]+1, i[3]+1), owner=i[0], name=self.names[i[1]]))
 
         for i in ind_komadai:
@@ -414,6 +422,7 @@ class Board:
         if name !=p.name:
             p.name = p.promote_name
         p.position = tuple(goal)
+
 
         return pieces
 
@@ -536,7 +545,7 @@ class Board:
             # if i==24: raise ValueError
             if not (np.array(moves) == mv[0:6]).any():
                 raise ValueError
-            good.append((np.array(moves) == mv[0:6]))
+            good.append(np.array(moves) == mv[0:6])
             komadai_out.append(komadai_move)
             banmen_out.append(banmen_move)
 

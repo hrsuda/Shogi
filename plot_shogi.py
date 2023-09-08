@@ -41,6 +41,7 @@ def plot_board(pieces, language="japanese"):
 
     ax.set_aspect(1)
     return ax
+    
 
 def plot_board_alpha(pieces, language="japanese"):
     if language =="japanese":
